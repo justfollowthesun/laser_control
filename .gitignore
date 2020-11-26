@@ -1,5 +1,5 @@
 # current program related unimportant stuff
-
+Хлам/
 *.db
 depricated/
 
@@ -20,6 +20,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+
 .Python
 build/
 develop-eggs/

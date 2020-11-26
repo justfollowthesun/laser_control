@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>682</width>
-    <height>467</height>
+    <width>560</width>
+    <height>384</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -145,7 +145,7 @@ QLineEdit{
                <number>0</number>
               </property>
               <item>
-               <widget class="QLineEdit" name="login_3">
+               <widget class="QLineEdit" name="login_line">
                 <property name="minimumSize">
                  <size>
                   <width>205</width>
@@ -176,7 +176,7 @@ QLineEdit{
                </widget>
               </item>
               <item>
-               <widget class="QLineEdit" name="password_3">
+               <widget class="QLineEdit" name="password_line">
                 <property name="minimumSize">
                  <size>
                   <width>205</width>
@@ -207,7 +207,7 @@ QLineEdit{
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="pushButton">
+               <widget class="QPushButton" name="submit_button">
                 <property name="minimumSize">
                  <size>
                   <width>205</width>
@@ -251,7 +251,7 @@ QPushButton:pressed {
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="checkBox">
+               <widget class="QCheckBox" name="saveme_chbox">
                 <property name="text">
                  <string>Запомнить меня</string>
                 </property>
