@@ -4,6 +4,7 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DESIGN_DIR = os.path.join(BASE_DIR, 'rsc')
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
 
 # windows information
 

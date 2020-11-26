@@ -2,3 +2,4 @@ PyQt5
 PyQt5-sip
 pytest
 pytest-qt
+PyYAML
