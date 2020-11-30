@@ -1,7 +1,7 @@
 import os
 import logging
 import sqlite3
-
+import pandas as pd
 from config import DB_PATH, DB_DIR
 
 
@@ -18,21 +18,28 @@ class Database():
         self.connection = sqlite3.connect(DB_PATH)
         logging.info("Successfully connect to database")
         self.create_table()
+        #self.create_testing_login()
+        self.put_login_password_to_db()
         logging.info("Successfully load environment")
 
+    def authorization_check(self, login:str, password:str) -> bool:
+        cursor: sqlite3.cursor = self.connection.cursor()
+        result = cursor.execute(f"select login, password from {self.tablename} where login = ? and password = ? ",(login,password))
+        return bool(cursor.fetchone())
+
     def close(self) -> None:
-        if self.connection:
+        if self.connecion:
             self.connection.close()
             logging.info("Database connection was closed")
 
     def create_table(self) -> None:
+
         """
         Create table with name self.tablename in selected database
         """
 
-        cursor: sqlite3.cursor = self.connection.cursor()
-
-        # cursor.execute(f'drop table {self.tablename}')
+        cursor:sqlite3.cursor = self.connection.cursor()
+        cursor.execute(f'drop table {self.tablename} ')
 
         # Есть один мастер-аккаунт, который пользователь создаёт при
         # первом запуске программы.
@@ -47,12 +54,26 @@ class Database():
             is_authorized bool
         )""")
 
-    def check_if_master_exists(self) -> bool:
 
+    def create_testing_login(self):
+        cursor: sqlite3.cursor = self.connection.cursor()
+        insert_line = f'insert into {self.tablename} (login, password, is_master, is_authorized) values(?, ?, ?, ?)'
+        cursor.execute(insert_line, ('login', 'password', False, False))
+        self.connection.commit()
+        logging.info(f'Have inserted {cursor.rowcount} records to the table.')
+
+    def put_login_password_to_db(self):
+        cursor: sqlite3.cursor = self.connection.cursor()
+        keys=pd.read_excel('Keys.xlsx', names=['Name','Login','Password', 'Master'])
+        for i in range(0, keys.shape[0]):
+            insert_line = f'insert into {self.tablename} (login, password, is_master, is_authorized) values(?, ?, ?, ?)'
+            cursor.execute(insert_line, (str(keys.Login[i]), str(keys.Password[i]), bool(keys.Master[i]), True))
+        self.connection.commit()
+        logging.info(f'Have inserted {cursor.rowcount} records to the table.')
+
+    def check_if_master_exists(self) -> bool:
         cursor: sqlite3.cursor = self.connection.cursor()
         result = cursor.execute(f"select count(*) from {self.tablename} where is_master = true")
-        print(cursor.fetchone())
-        print(type(cursor.fetchone()))
         return bool(cursor.fetchone())
 
     # def initiate_month(self) -> None:
@@ -62,12 +83,12 @@ class Database():
     #     """
     #
     #     today = datetime.now()
-    #
-    #     cursor: sqlite3.Cursor = self.connection.cursor()
-    #     stored_days_list = self.get_checkboxes( today, cursor=cursor)
-    #
-    #     if not stored_days_list:
-    #
+        #
+        # cursor: sqlite3.Cursor = self.connection.cursor()
+        # stored_days_list = self.get_checkboxes( today, cursor=cursor)
+        #
+        # if not stored_days_list:
+        #
     #         insert_line = f'insert into {self.tablename} (id, checked, day, month, full_date) values(?, ?, ?, ?, ?)'
     #         today = today.date()
     #         days_list = Helper.GetMonthDays()
