@@ -16,8 +16,6 @@ class LoginWindow(QtWidgets.QMainWindow, Ui_LoginWindow):
         self.database = database
         self.host = host
         self.submit_button.clicked.connect(self.check_login)
-        self.login_input=self.login_line.text()
-        self.password_input=self.password_line.text()
 
     def check_login(self) -> None:
         """

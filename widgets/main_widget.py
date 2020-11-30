@@ -4,7 +4,6 @@ from storage.database import Database
 from widgets.login_widget import LoginWindow
 from model.table_window import TableModel
 
-
 Ui_MainWindow, _ = uic.loadUiType(UI_MAIN_WINDOW, import_from=DESIGN_DIR)
 
 
