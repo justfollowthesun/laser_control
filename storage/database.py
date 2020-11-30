@@ -1,7 +1,7 @@
 import os
 import logging
 import sqlite3
-import pandas as pd
+# import pandas as pd
 from config import DB_PATH, DB_DIR
 
 
@@ -19,7 +19,7 @@ class Database():
         logging.info("Successfully connect to database")
         self.create_table()
         #self.create_testing_login()
-        self.put_login_password_to_db()
+        # self.put_login_password_to_db()
         logging.info("Successfully load environment")
 
     def authorization_check(self, login:str, password:str) -> bool:
@@ -28,7 +28,7 @@ class Database():
         return bool(cursor.fetchone())
 
     def close(self) -> None:
-        if self.connecion:
+        if self.connection:
             self.connection.close()
             logging.info("Database connection was closed")
 
@@ -62,14 +62,14 @@ class Database():
         self.connection.commit()
         logging.info(f'Have inserted {cursor.rowcount} records to the table.')
 
-    def put_login_password_to_db(self):
-        cursor: sqlite3.cursor = self.connection.cursor()
-        keys=pd.read_excel('Keys.xlsx', names=['Name','Login','Password', 'Master'])
-        for i in range(0, keys.shape[0]):
-            insert_line = f'insert into {self.tablename} (login, password, is_master, is_authorized) values(?, ?, ?, ?)'
-            cursor.execute(insert_line, (str(keys.Login[i]), str(keys.Password[i]), bool(keys.Master[i]), True))
-        self.connection.commit()
-        logging.info(f'Have inserted {cursor.rowcount} records to the table.')
+    # def put_login_password_to_db(self):
+    #     cursor: sqlite3.cursor = self.connection.cursor()
+    #     keys=pd.read_excel('Keys.xlsx', names=['Name','Login','Password', 'Master'])
+    #     for i in range(0, keys.shape[0]):
+    #         insert_line = f'insert into {self.tablename} (login, password, is_master, is_authorized) values(?, ?, ?, ?)'
+    #         cursor.execute(insert_line, (str(keys.Login[i]), str(keys.Password[i]), bool(keys.Master[i]), True))
+    #     self.connection.commit()
+    #     logging.info(f'Have inserted {cursor.rowcount} records to the table.')
 
     def check_if_master_exists(self) -> bool:
         cursor: sqlite3.cursor = self.connection.cursor()

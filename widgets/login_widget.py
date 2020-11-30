@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets, uic
 
 from config import UI_LOGIN_WINDOW, DESIGN_DIR
-from databasestorage.databaseconnect import Database
+from storage.database import Database
 
 
 Ui_LoginWindow, _ = uic.loadUiType(UI_LOGIN_WINDOW, import_from=DESIGN_DIR)

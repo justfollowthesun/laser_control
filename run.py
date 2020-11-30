@@ -7,8 +7,7 @@ def initate_application() -> None:
     import platform
     from PyQt5 import QtWidgets
     from widgets.main_widget import MainWindow
-    from widgets.login_widget import LoginWindow
-    from databasestorage.databaseconnect import Database
+    from storage.database import Database
     from utils.win import set_current_process_explicit_attributes
 
     if platform.system() == 'Windows':
