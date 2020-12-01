@@ -1,5 +1,6 @@
 from PyQt5 import QtWidgets
 
+
 class SpreadsheetTemplate(QtWidgets.QMainWindow):
 
     def __init__(self):
