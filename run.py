@@ -6,16 +6,17 @@ def initate_application() -> None:
     import sys
     import platform
     from PyQt5 import QtWidgets
-    from app import MainWindow
+    from widgets.main_widget import MainWindow
+    from storage.database import Database
     from utils.win import set_current_process_explicit_attributes
 
     if platform.system() == 'Windows':
         set_current_process_explicit_attributes()
 
     app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec_())
+    db = Database()
+    window = MainWindow(db)
+    app.exec_()
 
 
 def filelog_constructor(*args, **kw) -> logging.FileHandler:
@@ -55,5 +56,5 @@ def setup_logging() -> None:
 
 
 if __name__ == "__main__":
-    setup_logging()
+    #setup_logging()
     initate_application()

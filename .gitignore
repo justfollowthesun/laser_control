@@ -2,7 +2,8 @@
 Хлам/
 *.db
 depricated/
-
+хлам/
+.idea/
 
 #static database-related files
 

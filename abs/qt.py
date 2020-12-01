@@ -1,11 +1,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class BaseWindowWidget(QtWidgets.QWidget):
-    """Base Window Class."""
+class BaseAbstractWidget(QtWidgets.QWidget):
+    """Base abstract widget Class."""
 
 
-class MoveableWidget(BaseWindowWidget):
+class MoveableWidget(BaseAbstractWidget):
     """
     Inheritance from this class will make your widget moveable with mouse
     It's helpful in case your widget is frameless
@@ -34,3 +34,15 @@ class MoveableWidget(BaseWindowWidget):
         delta: QtCore.QPoint = event.globalPos() - self._widget_position
         self.move(self.x() + delta.x(), self.y() + delta.y())
         self._widget_position = event.globalPos()
+
+
+class ScrollableWidget(BaseAbstractWidget):
+
+    def __init__(self):
+        super().__init__()
+        widget = QtWidgets.QWidget()
+        self.layout = QtWidgets.QVBoxLayout(widget)
+        self.layout.setAlignment(QtCore.Qt.AlignTop)
+        self.setWidget(widget)
+        self.setWidgetResizable(True)
+        self.show()
