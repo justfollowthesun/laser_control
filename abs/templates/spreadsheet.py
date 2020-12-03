@@ -161,3 +161,8 @@ class SpreadsheetTemplate(QtWidgets.QMainWindow):
 
     def clearTable(self):
         self.table_widget.clear()
+if __name__ == '__main__':
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    window = SpreadsheetTemplate()
+    sys.exit(app.exec_())

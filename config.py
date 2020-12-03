@@ -18,4 +18,4 @@ VERSION = "0.1"
 # design / interface
 
 UI_MAIN_WINDOW = os.path.join(DESIGN_DIR, 'table.ui')
-UI_LOGIN_WINDOW = os.path.join(DESIGN_DIR, 'dialog.ui')
+UI_LOGIN_WINDOW = os.path.join(DESIGN_DIR, 'dialog_v2.ui')
