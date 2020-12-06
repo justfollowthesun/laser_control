@@ -54,7 +54,6 @@ def setup_logging() -> None:
     qt_logger = logging.getLogger('PyQt5')
     qt_logger.setLevel(logging.WARNING)
 
-
 if __name__ == "__main__":
     #setup_logging()
     initate_application()
