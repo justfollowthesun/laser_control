@@ -11,14 +11,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def __init__(self, database: Database) -> None:
         QtWidgets.QMainWindow.__init__(self)
-        self.table = SpreadsheetTemplate(self)
+        # self.table = SpreadsheetTemplate(self)
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
         self.database = database
         self.login_widget = LoginWindow(self.database,self)
-        self.main_table.setModel(self.table)
-        self.login_widget.show()
-        #self.show()
+        # self.main_table.setModel(self.table)
+        # self.login_widget.show()
+        self.show()
 
     def closeEvent(self, event) -> None:
         event.accept()
