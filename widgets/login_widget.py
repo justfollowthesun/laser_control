@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets, uic, QtCore
 from config import UI_LOGIN_WINDOW, DESIGN_DIR
-from databasestorage.databaseconnect import Database
+from storage.database import Database
 from abs.qt import MoveableWidget
 
 
@@ -22,7 +22,7 @@ class LoginWindow(QtWidgets.QMainWindow, Ui_LoginWindow, MoveableWidget):
         self.go_to_signup_page.mouseReleaseEvent = lambda e : self.login_stackedWidget.setCurrentIndex(1)
         self.go_to_login_page.mouseReleaseEvent = lambda e : self.login_stackedWidget.setCurrentIndex(0)
         self.submit_button_2.clicked.connect(self.sign_up)
-        print(database, host)
+        
     def check_login(self) -> None:
         """
         Shows main window if login and password matches data in database
@@ -44,8 +44,11 @@ class LoginWindow(QtWidgets.QMainWindow, Ui_LoginWindow, MoveableWidget):
         check_password=self.password_line_22.text()
         print(self.database)
         if enter_login and enter_password and enter_password == check_password:
-            if self.database.signup_check(enter_login):
-                print('OK')
+            if not self.database.signup_check(enter_login):
+                self.database.add_new_user(enter_login, enter_password)
+                self.login_stackedWidget.setCurrentIndex(0)
+            else:
+                print('Пользователь уже зарегистрирован')
 
     def closeEvent(self, event=None):
         self.close()
