@@ -1,4 +1,3 @@
-import sys
 import matplotlib
 
 try:
@@ -10,7 +9,7 @@ finally:
     import matplotlib.pyplot as plt
 
 
-class PieChartExample(FigureCanvasQTAgg):
+class PieChart(FigureCanvasQTAgg):
 
     def __init__(self) -> None:
 
@@ -28,21 +27,3 @@ class PieChartExample(FigureCanvasQTAgg):
         ax1.axis('equal')
 
         super().__init__(fig1)
-
-
-class MainWindow(QtWidgets.QMainWindow):
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
-        new_pie = PieChartExample()
-
-        self.setCentralWidget(new_pie)
-
-        self.show()
-
-
-if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    w = MainWindow()
-    sys.exit(app.exec_())
