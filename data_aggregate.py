@@ -82,8 +82,12 @@ class data_aggregate():
                 data4user.errors[record[1]]=record[0]
             return(data4user)
 
-data_simulate=data_aggregate()
-data_simulate.process_data()
+gen = generate_data_flow_generator()
 
-user1=data4user()
-#print(user1.task_start)
+for data in gen:
+    print(data)
+    
+# try:
+#     return next(gen)
+# except StopIteration:
+#     return next(gen)
