@@ -2,6 +2,9 @@ from PyQt5 import QtWidgets, uic
 import json
 from config import UI_MAIN_WINDOW, DESIGN_DIR
 from model.table_window import TableModel
+from storage.database import Database
+from widgets.login_widget import LoginWindow
+from widgets.main_widget import MainWindow
 # Read more at
 # https://doc.bccnsoft.com/docs/PyQt5/designer.html#using-the-generated-code
 Ui_MainWindow, _ = uic.loadUiType(UI_MAIN_WINDOW, import_from=DESIGN_DIR)
@@ -29,22 +32,29 @@ class login_form():
     login='login'
     password='qwerty'
 
-class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-
+class application():
     def __init__(self):
-        QtWidgets.QMainWindow.__init__(self)
-        Ui_MainWindow.__init__(self)
-        self.setupUi(self)
-        data = [
-          [4, 9, 2],
-          [1, 0, 0],
-          [3, 5, 0],
-          [3, 3, 2],
-          [7, 8, 9],
-        ]
-        self.model=TableModel(data)
-        self.tableView_2.setModel(self.model)
-    def closeEvent(self, event):
-        with open("data_file.json", "w") as write_file:
-            json.dump(self.model._data, write_file)
-        event.accept()
+        self.db = Database()
+        self.login_window=LoginWindow(self.db, QtWidgets.QMainWindow)
+        self.main_window = MainWindow(db)
+        self.login_window.show()
+        
+# class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+#
+#     def __init__(self):
+#         QtWidgets.QMainWindow.__init__(self)
+#         Ui_MainWindow.__init__(self)
+#         self.setupUi(self)
+#         data = [
+#           [4, 9, 2],
+#           [1, 0, 0],
+#           [3, 5, 0],
+#           [3, 3, 2],
+#           [7, 8, 9],
+#         ]
+#         self.model=TableModel(data)
+#         self.tableView_2.setModel(self.model)
+#     def closeEvent(self, event):
+#         with open("data_file.json", "w") as write_file:
+#             json.dump(self.model._data, write_file)
+#         event.accept()

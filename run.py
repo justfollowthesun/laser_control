@@ -16,6 +16,7 @@ def initate_application() -> None:
     app = QtWidgets.QApplication(sys.argv)
     db = Database()
     window = MainWindow(db)
+
     app.exec_()
 
 

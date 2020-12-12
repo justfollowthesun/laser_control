@@ -4,23 +4,15 @@ from typing import List, Optional, Union
 
 from PyQt5 import QtChart, QtGui, QtWidgets, QtCore
 
-data = (
-    ("Python", 80),
-    ("C++", 70),
-    ("Java", 50),
-    ("C#", 40),
-    ("PHP", 30),
-)
-
-
 class PieChartConstructor(QtChart.QChartView):
 
     def __init__(self, series: List[QtChart.QPieSeries], title: Optional[str] = None) -> None:
 
         self.series = series
+        print(series.slices())
         # [s.clicked.connect(self.slice_clicked) for s in self.series.slices()]
 
-        self.title = title or "Pie Chart Example"
+        self.title =  "Статистика по операциям"
 
         chart = QtChart.QChart()
         chart.addSeries(self.series)
@@ -73,7 +65,7 @@ class PieChartExample(QtWidgets.QMainWindow):
     def __init__(self) -> None:
 
         super().__init__()
-        self.setWindowTitle("PyQtChart Pie Chart")
+        self.setWindowTitle("Время выполнения операций")
         self.setMinimumSize(700, 500)
         chartview = self.create_piechart()
         self.setCentralWidget(chartview)
@@ -86,12 +78,9 @@ class PieChartExample(QtWidgets.QMainWindow):
     def create_piechart(self) -> QtChart.QChartView:
 
         series = QtChart.QPieSeries()
-
         [series.append(*piece) for piece in data]
-
         pie = PieChartConstructor(series)
         pie.add_slice(0)
-
         return pie
 
 

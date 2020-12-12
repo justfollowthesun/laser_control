@@ -64,7 +64,7 @@ class Database():
 
     def create_testing_login(self):
         cursor: sqlite3.cursor = self.connection.cursor()
-        insert_line = f'insert into {self.tablename} (login, password, is_master, is_authorized) values(?, ?, ?, ?)'
+        insert_line = f'insert or ignore into {self.tablename} (login, password, is_master, is_authorized) values(?, ?, ?, ?)'
         cursor.execute(insert_line, ('login', 'password', False, False))
         self.connection.commit()
         logging.info(f'Have inserted {cursor.rowcount} records to the table.')
