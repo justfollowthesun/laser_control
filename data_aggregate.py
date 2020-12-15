@@ -1,5 +1,55 @@
-from utils.input_data_imit import generate_data_flow,generate_data_flow_generator, InputDataType
+from utils.input_data_imit import generate_data_flow_generator, InputDataType
 from datetime import datetime
+
+class data_aggregate():
+
+    def __init__(self) -> None:
+        # self.data = self.data_processing()
+        self.gen = generate_data_flow_generator()
+
+
+    def receive_data(self) -> InputDataType:
+        try:
+            return next(self.gen)
+        except StopIteration:
+            self.gen = generate_data_flow_generator()
+            return next(self.gen)
+
+    def process_data(self) -> None:
+
+        data_input = self.gen
+
+        ERROR_LIST = ['Error1','Error2']
+
+        for record in data_input:
+            print(record)
+            if record[1] == "PROGRAM":
+                if record[2]:
+                    data4user.program_start = record[0]
+                else:
+                    data4user.program_finish = record[0]
+
+            if record[1] == "TASK":
+                if record[2]:
+                    data4user.task_start = record[0]
+                else:
+                    data4user.task_finish = record[0]
+
+            if record[1] == "LASER":
+                if record[2]:
+                    data4user.laser_start = record[0]
+                else:
+                    data4user.laser_finish = record[0]
+
+            if record[1] == "PAUSE":
+                if record[2]:
+                    data4user.pause_start = record[0]
+                else:
+                    data4user.pause_finish = record[0]
+
+            if record[1] in ERROR_LIST:
+                data4user.errors[record[1]] = record[0]
+        return(data4user)
 
 class data4user():
 
@@ -13,8 +63,6 @@ class data4user():
     user: str
     program_start: datetime
     program_finish: datetime
-    #program_total: datetime = program_finish-program_start
-    task_start: datetime
     task_finish: datetime
     task_time: datetime
     laser_start: datetime
@@ -25,69 +73,13 @@ class data4user():
     pause_total: datetime
     errors = {}
 
+class data_forming():
+    pass
 
-class data_aggregate():
-
-    def __init__(self) -> None:
-        # self.data = self.data_processing()
-
-        self.gen = generate_data_flow_generator()
-
-    def receive_data(self) -> InputDataType:
-        try:
-            return next(self.gen)
-        except StopIteration:
-            self.gen = generate_data_flow_generator()
-            return next(self.gen)
-
-    def process_data(self) -> None:
-
-        data_list = ["TASK", "LASER", "PAUSE", "GAS"]
-        ERROR_LIST = ['Error1','Error2']
-
-        a=generate_data_flow()
-
-        for x in a:
-            print(x)
-
-        data4user.user = a[1][2]
-
-        for record in a:
-            print(record)
-            if record[1]=="PROGRAM":
-                if record[2]:
-                    data4user.program_start=record[0]
-                else:
-                    data4user.program_finish=record[0]
-
-            if record[1]=="TASK":
-                if record[2]:
-                    data4user.task_start=record[0]
-                else:
-                    data4user.task_finish=record[0]
-
-            if record[1]=="LASER":
-                if record[2]:
-                    data4user.laser_start=record[0]
-                else:
-                    data4user.laser_finish=record[0]
-
-            if record[1]=="PAUSE":
-                if record[2]:
-                    data4user.pause_start=record[0]
-                else:
-                    data4user.pause_finish=record[0]
-
-            if record[1] in ERROR_LIST:
-                data4user.errors[record[1]]=record[0]
-            return(data4user)
+a = data_aggregate()
+print(a.process_data())
 
 gen = generate_data_flow_generator()
 
-for data in gen:
-    print(data)
-    
-# try:
-#     return next(gen)
-# except StopIteration:
-#     return next(gen)
+# for data in gen:
+#     print(data)

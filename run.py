@@ -34,8 +34,6 @@ def filelog_constructor(*args, **kw) -> logging.FileHandler:
     LOG_FILE = os.path.join(LOG_DIR, 'std_out.log')
     return logging.FileHandler(LOG_FILE)
 
-
-
 def setup_logging() -> None:
 
     import logging.config
@@ -46,7 +44,6 @@ def setup_logging() -> None:
     loggingConf = open(os.path.join(BASE_DIR, 'logging.yml'), 'r')
     logging.config.dictConfig(yaml.safe_load(loggingConf))
     loggingConf.close()
-
     logfile = logging.getLogger('file')
     logconsole = logging.getLogger('console')
     logfile.debug("Debug FILE")
