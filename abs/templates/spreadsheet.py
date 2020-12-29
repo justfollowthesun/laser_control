@@ -8,13 +8,13 @@ class SpreadsheetTemplate(QtWidgets.QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setMinimumSize(1000, 500)
+        self.setMinimumSize(50, 50)
         self.setWindowTitle("Время работы на станке")
         # Used for copy and paste actions
         self.item_text = None
-        self.createMenu()
-        self.createTable()
-        self.show()
+        #self.createMenu()
+        #self.createTable()
+        #self.show()
 
     def createTable(self):
         """
@@ -27,7 +27,7 @@ class SpreadsheetTemplate(QtWidgets.QMainWindow):
         # Set focus on cell in the table
         self.table_widget.setCurrentCell(0, 0)
         # When the horizontal headers are double-clicked, emit a signal
-        self.table_widget.horizontalHeader().sectionDoubleClicked.connect(self.changeHeader)
+        #self.table_widget.horizontalHeader().sectionDoubleClicked.connect(self.changeHeader)
         self.setCentralWidget(self.table_widget)
         self.table_widget.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem('Параметр'))
         self.table_widget.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem('Время чч:мм'))
@@ -166,8 +166,8 @@ class SpreadsheetTemplate(QtWidgets.QMainWindow):
     def clearTable(self):
         self.table_widget.clear()
 
-if __name__ == '__main__':
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    window = SpreadsheetTemplate()
-    sys.exit(app.exec_())
+#if __name__ == '__main__':
+    # import sys
+    # app = QtWidgets.QApplication(sys.argv)
+    # window = SpreadsheetTemplate()
+    # sys.exit(app.exec_())

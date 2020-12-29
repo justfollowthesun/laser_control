@@ -10,9 +10,8 @@ class PieChartConstructor(QtChart.QChartView):
 
         self.series = series
         print(series.slices())
-        # [s.clicked.connect(self.slice_clicked) for s in self.series.slices()]
 
-        self.title =  "Статистика по операциям"
+        self.title = "Статистика по операциям"
 
         chart = QtChart.QChart()
         chart.addSeries(self.series)
