@@ -1,3 +1,4 @@
+
 import os
 import logging
 import sqlite3
@@ -18,7 +19,7 @@ class Database():
         self.connection = sqlite3.connect(DB_PATH)
         logging.info("Successfully connect to database")
         self.create_table()
-        #self.create_testing_login()
+        self.create_testing_login()
         # self.put_login_password_to_db()
         logging.info("Successfully load environment")
 
@@ -26,6 +27,13 @@ class Database():
         cursor: sqlite3.cursor = self.connection.cursor()
         result = cursor.execute(f"select login, password from {self.tablename} where login = ? and password = ? ",(login,password))
         return bool(cursor.fetchone())
+
+    def add_new_user(self, login:str, password:str)->None:
+        cursor: sqlite3.cursor = self.connection.cursor()
+        insert_line = f'insert into {self.tablename} (login, password, is_master, is_authorized) values(?, ?, ?, ?)'
+        cursor.execute(insert_line, (login, password, False, False))
+        self.connection.commit()
+        logging.info(f'Have inserted {cursor.rowcount} records to the table.')
 
     def close(self) -> None:
         if self.connection:
@@ -57,7 +65,7 @@ class Database():
 
     def create_testing_login(self):
         cursor: sqlite3.cursor = self.connection.cursor()
-        insert_line = f'insert into {self.tablename} (login, password, is_master, is_authorized) values(?, ?, ?, ?)'
+        insert_line = f'insert or ignore into {self.tablename} (login, password, is_master, is_authorized) values(?, ?, ?, ?)'
         cursor.execute(insert_line, ('login', 'password', False, False))
         self.connection.commit()
         logging.info(f'Have inserted {cursor.rowcount} records to the table.')
@@ -70,6 +78,11 @@ class Database():
     #         cursor.execute(insert_line, (str(keys.Login[i]), str(keys.Password[i]), bool(keys.Master[i]), True))
     #     self.connection.commit()
     #     logging.info(f'Have inserted {cursor.rowcount} records to the table.')
+
+    def signup_check(self, login:str) -> bool:
+        cursor: sqlite3.cursor = self.connection.cursor()
+        result = cursor.execute(f"select login from {self.tablename} where login = ? ",(login,))
+        return bool(cursor.fetchone())
 
     def check_if_master_exists(self) -> bool:
         cursor: sqlite3.cursor = self.connection.cursor()

@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="icon">
+    <file>minimize+minus+remove+sign+icon-1320085940403912850_0.svg</file>
+    <file>cross.svg</file>
+  </qresource>
+</RCC>
