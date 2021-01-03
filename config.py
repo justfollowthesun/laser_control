@@ -19,3 +19,7 @@ VERSION = "0.1"
 
 UI_MAIN_WINDOW = os.path.join(DESIGN_DIR, 'table_diagram.ui')
 UI_LOGIN_WINDOW = os.path.join(DESIGN_DIR, 'dialog_v2.ui')
+
+#production
+
+DEBUG = True

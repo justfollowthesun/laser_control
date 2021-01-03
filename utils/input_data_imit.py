@@ -16,7 +16,7 @@ def gas_press_sometimes():
 
     current_action = random.choice(["PAUSE", "GAS"])
 
-    for _ in range(random.randint(10, 50)):
+    for _ in range(random.randint(10, 20)):
 
         if random.random() > 0.9:
             yield (datetime.now(),current_action, True)
@@ -48,13 +48,13 @@ def generate_data_flow_generator() -> Generator[InputDataType, None, None]:
             yield from gas_press_sometimes()
 
         yield (datetime.now(), data, True)
-        time.sleep(random.randint(3, 10))
+        time.sleep(random.randint(3, 4))
 
     for data in reversed(data_list):
         e = yield_error_randomly()
         if e:
             yield e
-        time.sleep(random.randint(3, 10))
+        time.sleep(random.randint(3, 5))
         yield (datetime.now(), data, False)
 
     #raise StopIteration
