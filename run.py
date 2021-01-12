@@ -1,21 +1,40 @@
 import logging
 import os
+import log
+import sys
+import pickle
+import yaml
+import platform
+from PyQt5 import QtWidgets, uic, QtCore
+from PyQt5.QtWidgets import QApplication
 
 def initate_application() -> None:
+
     """Application entry point."""
-    import sys
-    import platform
-    from PyQt5 import QtWidgets
+
+    from widgets.login_widget import LoginWindow
     from widgets.main_widget import MainWindow
-    from storage.database import Database
+    from model.table_window import TableModel
+    from data_aggregate import data_aggregate
+    from abs.templates.spreadsheet import SpreadsheetTemplate
+    from abs.templates.plotting.qtchart import PieChartConstructor
+    from utils.input_data_imit import generate_data_flow_generator
     from utils.win import set_current_process_explicit_attributes
+    from abs.qt import MoveableWidget
+
+    from storage.login_database import Login_Database
+    from storage.timers_database import Timers_Database
+
+    #from data_aggregate import data4user
 
     if platform.system() == 'Windows':
         set_current_process_explicit_attributes()
 
-    app = QtWidgets.QApplication(sys.argv)
-    db = Database()
-    window = MainWindow(db)
+    logger = logging.getLogger(f"LASER.{__name__}")
+    logger.warning('str')
+
+    main_widget = MainWindow(Login_Database, Timers_Database)
+    main_widget.show()
     app.exec_()
 
 
@@ -33,8 +52,6 @@ def filelog_constructor(*args, **kw) -> logging.FileHandler:
     LOG_FILE = os.path.join(LOG_DIR, 'std_out.log')
     return logging.FileHandler(LOG_FILE)
 
-
-
 def setup_logging() -> None:
 
     import logging.config
@@ -45,7 +62,6 @@ def setup_logging() -> None:
     loggingConf = open(os.path.join(BASE_DIR, 'logging.yml'), 'r')
     logging.config.dictConfig(yaml.safe_load(loggingConf))
     loggingConf.close()
-
     logfile = logging.getLogger('file')
     logconsole = logging.getLogger('console')
     logfile.debug("Debug FILE")
@@ -54,7 +70,8 @@ def setup_logging() -> None:
     qt_logger = logging.getLogger('PyQt5')
     qt_logger.setLevel(logging.WARNING)
 
-
 if __name__ == "__main__":
     #setup_logging()
+
+    app = QApplication(sys.argv)
     initate_application()

@@ -75,6 +75,20 @@ class TimerTemplate(QtWidgets.QWidget):
                 self._is_started = False
                 self.set_label_and_button_text(custom_label_text=self._completed_timer_text)
 
+
+    def print_timer(self):
+
+            if self._is_started:
+
+                self._counter -= 1
+
+                if self._counter != 0:
+                    text = str(self._counter / 10) + " s"
+                    self.clock_label.setText(text)
+                else:
+                    self._is_started = False
+                    self.set_label_and_button_text(custom_label_text=self._completed_timer_text)
+
     def set_label_and_button_text(self, custom_label_text: Optional[str] = None) -> None:
         """
         Change clock_label and action_button text
