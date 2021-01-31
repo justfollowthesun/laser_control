@@ -1,5 +1,11 @@
 <RCC>
   <qresource prefix="icon">
+    <file>button.png</file>
+    <file>file.png</file>
+    <file>delete-user.png</file>
+    <file>add-user.png</file>
+    <file>minus.png</file>
+    <file>add.png</file>
     <file>minimize+minus+remove+sign+icon-1320085940403912850_0.svg</file>
     <file>cross.svg</file>
   </qresource>

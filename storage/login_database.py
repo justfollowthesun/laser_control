@@ -16,15 +16,29 @@ class Login_Database():
             os.mkdir(DB_DIR)
 
         self.connection = sqlite3.connect(DB_LOGIN_PATH)
+        self.cursor = self.connection.cursor()
+
         logging.info("Successfully connect to database")
-        # self.put_login_password_to_db()
         logging.info("Successfully load environment")
 
     def authorization_check(self, login:str, password:str) -> bool:
 
-        cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE login = ? and password = ?",(login, password,))
+        self.cursor.execute("SELECT * FROM users WHERE login = ? and password = ?",(login, password,))
+
         return cursor.fetchone()
+
+
+    def user_col(self):
+
+        result = self.cursor.execute("SELECT user_name FROM users").fetchall()
+
+        res_list =[]
+
+        for res in result:
+
+            res_list.append(str(res[0]))
+
+        return res_list
 
     def add_new_user(self, name, login:str, password:str)->None:
 
@@ -33,6 +47,7 @@ class Login_Database():
         cursor.execute(insert_line, (name, login, password, False))
         self.connection.commit()
         logging.info(f'Have inserted {cursor.rowcount} records to the table.')
+
 
     def close(self) -> None:
 

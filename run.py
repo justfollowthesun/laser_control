@@ -12,18 +12,18 @@ def initate_application() -> None:
 
     """Application entry point."""
 
-    from widgets.login_widget import LoginWindow
+    #from widgets.login_widget import LoginWindow
     from widgets.main_widget import MainWindow
-    from model.table_window import TableModel
-    from data_aggregate import data_aggregate
+    #from model.table_window import TableModel
+
     from abs.templates.spreadsheet import SpreadsheetTemplate
     from abs.templates.plotting.qtchart import PieChartConstructor
     from utils.input_data_imit import generate_data_flow_generator
     from utils.win import set_current_process_explicit_attributes
     from abs.qt import MoveableWidget
 
-    from storage.login_database import Login_Database
-    from storage.timers_database import Timers_Database
+    #from storage.login_database import Login_Database
+    #from storage.timers_database import Timers_Database
 
     #from data_aggregate import data4user
 
@@ -33,7 +33,7 @@ def initate_application() -> None:
     logger = logging.getLogger(f"LASER.{__name__}")
     logger.warning('str')
 
-    main_widget = MainWindow(Login_Database, Timers_Database)
+    main_widget = MainWindow()
     main_widget.show()
     app.exec_()
 

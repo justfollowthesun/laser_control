@@ -2,6 +2,7 @@ from PyQt5 import QtWidgets, uic, QtChart, QtCore
 from datetime import datetime
 from config import UI_MAIN_WINDOW, UI_ERRORS_WINDOW, UI_TIMERS_WINDOW, DESIGN_DIR
 import pickle
+from datetime import datetime
 from model.table_window import TableModel
 from abs.templates.spreadsheet import SpreadsheetTemplate
 from abs.templates.plotting.qtchart import PieChartConstructor
@@ -9,37 +10,77 @@ from abs.qt import MoveableWidget
 
 from widgets.errors_table import ErrorsWindow
 from widgets.timers_table import TimersWindow
-from widgets.login_widget import LoginWindow
+#from widgets.login_widget import LoginWindow
+#from widgets.filters import FiltersWindow
+from widgets.bar_chart import BarChart
+from widgets.combobox import CheckableComboBox
 
-from storage.login_database import Login_Database
-from storage.timers_database import Timers_Database
+from data_parser import DataParser
 
 Ui_MainWindow, _ = uic.loadUiType(UI_MAIN_WINDOW, import_from = DESIGN_DIR)
-
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
     my_timer = 0
 
-    def __init__(self, users_db: Login_Database, timers_db: Timers_Database) -> None:
+    def __init__(self) -> None:
 
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
+
         self.user = ('default', 'default', 'default', 1)
-        self.users_db = users_db()
-        self.timers_db = timers_db()
+
+
+        self.parser = DataParser()
+        self.users = self.parser.users()
+        self.machines = self.parser.machines()
+
         self.errors_journal.clicked.connect(self.open_errors_table)
         self.timers_journal.clicked.connect(self.open_timers_table)
         self.login_b.clicked.connect(self.open_login_widget)
-        self.graph_b.mouseReleaseEvent = lambda e : self.stackedWidget.setCurrentIndex(1)
+        self.graph_b.clicked.connect(self.set_up_diagram)
         self.stat_b.mouseReleaseEvent = lambda e : self.stackedWidget.setCurrentIndex(0)
+
+        self.users_box = CheckableComboBox(self)
+        self.users_box.addItems(self.users)
+        self.users_box.setGeometry(760, 40, 161, 35)
+        self.users_box.show()
+
+        self.machines_box =  CheckableComboBox(self)
+        self.machines_box.addItems(self.machines)
+        self.machines_box.setGeometry(1100, 40, 161, 35)
+        self.machines_box.show()
+        self.set_filters.clicked.connect(self.set_up_filters)
+
+        #self.filters.clicked.connect(self.open_filters)
+
+    def set_up_filters(self) -> list:
+
+        start_date = self.start_date.date().toPyDate()
+        start_time = self.start_time.time().toPyTime()
+        start_datetime = datetime.combine(start_date, start_time)
+        start_datetime_to_str = datetime.strftime(start_datetime, '%Y-%m-%d %H:%M:%S')
+
+
+        finish_date = self.finish_date.date().toPyDate()
+        finish_time = self.finish_time.time().toPyTime()
+        finish_datetime = datetime.combine(finish_date, finish_time)
+        finish_datetime_to_str = datetime.strftime(finish_datetime, '%Y-%m-%d %H:%M:%S')
+
+        users = self.users_box.currentData()
+        equipment = self.machines_box.currentData()
+
+
+        return start_datetime_to_str, finish_datetime_to_str, users, equipment
+
 
 
     def open_errors_table(self):
 
         self.errors_table = ErrorsWindow()
         self.errors_table.show()
+
 
     def open_login_widget(self):
 
@@ -59,12 +100,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         print(self.user)
         self.timers_table.show()
 
+    def set_up_diagram(self):
+
+        clearLayout(self.graph_place)
+        self.stackedWidget.setCurrentIndex(1)
+        self.graph_place.addWidget(BarChart())
+
+
+    def open_filters(self):
+
+        self.filters = FiltersWindow(self.users_db, self.machines_db)
+        self.filters.show()
+
     def update_timer(self):
 
         self.setItem(0, 0, QtWidgets.QTableWidgetItem(str(my_timer)))
 
     def exp_to_xlsx():
-        
+
+        pass
+
     #def create_table(self, table_template, test_data):
 
         table_widget = table_template
@@ -122,9 +177,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         return pie
 
 
+    def filters(self):
+        pass
+
+
+
     def closeEvent(self, event) -> None:
         dump_data(self)
         self.close()
+
+
+def clearLayout(layout):
+
+  while layout.count():
+
+    child = layout.takeAt(0)
+
+    if child.widget():
+
+      child.widget().deleteLater()
 
 
 def dump_data(main_window):

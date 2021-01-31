@@ -42,3 +42,8 @@ class Timers_Database():
 
         self.cursor.execute('''UPDATE timers SET date_to_change = ? WHERE operation = ?''', ('/'.join(date_res), operation_name))
         self.connection.commit()
+
+    def connect_with_db(self, str_to_search):
+
+        result = self.cursor.execute("SELECT * FROM users WHERE user_name LIKE ?",(str_to_search)).fetchall()
+        return result
