@@ -3,15 +3,20 @@ import random
 from typing import List, Optional, Union
 
 from PyQt5 import QtChart, QtGui, QtWidgets, QtCore
+from PyQt5.QtGui import QFont
 
 class PieChartConstructor(QtChart.QChartView):
 
     def __init__(self, series: List[QtChart.QPieSeries], title: Optional[str] = None) -> None:
 
         self.series = series
-        print(series.slices())
 
-        self.title = "Статистика по операциям"
+        # for slice in self.series.slices():
+        #     slice.setLabel("{:.2f}%".format(100 * slice.percentage()))
+
+        self.title = "<span style='color: black; font-size: 18pt;'>Статистика по операциям</span>"
+        header_font = QFont('Sergoe UI', 12)
+        header_font.setWeight(QFont.Bold)
 
         chart = QtChart.QChart()
         chart.addSeries(self.series)
@@ -25,6 +30,8 @@ class PieChartConstructor(QtChart.QChartView):
 
         # chart.legend().setVisible(True)
         chart.legend().setAlignment(QtCore.Qt.AlignBottom)
+        chart.legend().setFont(header_font)
+        #chart.title.setFont(header_font)
 
         super().__init__(chart)
         self.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -51,6 +58,7 @@ class PieChartConstructor(QtChart.QChartView):
         exploded = slice.isExploded()
 
         for s in self.series.slices():
+
             if s.isExploded():
                 s.setExploded(False)
                 s.setLabelVisible(False)

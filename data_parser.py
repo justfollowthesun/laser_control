@@ -3,6 +3,8 @@ import sqlite3
 from config import DB_PATH, DB_DIR
 from datetime import datetime, timedelta
 from input_data import data_generator
+from PyQt5.QtCore import QSize, Qt, QThread, pyqtSignal, QTimer
+from collections import defaultdict
 
 class DataParser():
 
@@ -10,47 +12,10 @@ class DataParser():
 
         if not os.path.exists(DB_DIR):
             os.mkdir(DB_DIR)
-
-
-        self.operation_set = ['PROGRAM', 'TASK', 'PAUSE', 'LASER', 'GAS']
-
-    def add_to_db(self) -> None:
-
-        connection = sqlite3.connect(DB_PATH)
-        cursor = connection.cursor()
-
-        user_login = InputData().user_login
-        machine = InputData().machine
-
-        cursor.execute("""DELETE FROM operations""")
-        for data in self.row_data:
-
-            if data[1] in self.operation_set:
-
-                for data_finish in self.row_data[self.row_data.index(data)+1:]:
-
-                    if data_finish[1] == data[1]:
-
-                        operation = data[1]
-                        start_time = data[0]
-                        finish_time = data_finish[0]
-
-                        insert_line = """INSERT INTO operations (user_login, operation_name, start_operation, finish_operation, machine_name) values(?, ?, ?, ?, ?)"""
-                        cursor.execute(insert_line, (user_login, operation, start_time, finish_time, machine))
-
-
-            else:
-
-                operation = data[1]
-                start_time = data[0]
-                finish_time = data[0]
-
-                insert_line = """INSERT INTO operations (user_login, operation_name, start_operation, finish_operation, machine_name) values(?, ?, ?, ?, ?)"""
-                cursor.execute(insert_line, (user_login, operation, start_time, finish_time, machine))
-
-
-        connection.commit()
-        connection.close()
+        #self.data = InputData()
+        #self.list = self.data.data_to_pars()
+        #self.data_signal = pyqtSignal(self.list)
+        self.operations_d = defaultdict(list)
 
     def filters(self, start_data, finish_data, users, machines) -> list:
 
@@ -115,37 +80,13 @@ class DataParser():
 
         return users_res
 
-    def date_to_table(self, start_data, finish_data, users, machines) -> dict:
 
-        d = {}
-        program_time = 0
-        for operation in self.operation_set:
-            d[operation] = 0
-
-        row_data = self.filters(start_data, finish_data, users, machines)
-        print(row_data)
-        for data in row_data:
-
-            if data[2] in self.operation_set:
-
-                datetime_start = datetime.strptime(data[3], '%Y-%m-%d %H:%M:%S')
-                datetime_finish = datetime.strptime(data[4], '%Y-%m-%d %H:%M:%S')
-
-                d[data[2]] = d[data[2]]+ (datetime_finish - datetime_start).seconds
-
-
-        if d['PROGRAM'] == 0:
-
-            d['PROGRAM'] = (datetime.strptime(row_data[-1][4], '%Y-%m-%d %H:%M:%S') - datetime.strptime(row_data[0][3], '%Y-%m-%d %H:%M:%S')).seconds
-
-        return d
-
-    def parsing(self):
+    def parsing(self, data):
 
         connection = sqlite3.connect(DB_PATH)
         cursor = connection.cursor()
         gen_data = data_generator()
-        list_to_pars = next(gen_data)
+        list_to_pars = data
 
         event_date = list_to_pars[0]
         user = list_to_pars[1]
@@ -180,24 +121,119 @@ class DataParser():
         user_id = cursor.execute(f"""SELECT user_id FROM users WHERE user_name = ? """, (user,)).fetchone()[0]
         machine_id = cursor.execute(f"""SELECT machine_id FROM machines WHERE machine_name = ? """, (machine,)).fetchone()[0]
         status_id = cursor.execute(f"""SELECT status_id FROM status_table WHERE status_name = ? """, (status,)).fetchone()[0]
-
-        print(event_date, user_id, machine_id, event, status_id)
-
         insert_line = """INSERT INTO operations (event_date, user_id, machine_id, operation, status_id) VALUES (?, ?, ?, ?, ?)"""
         cursor.execute(insert_line, (event_date, user_id, machine_id, event, status_id))
         connection.commit()
+        self.operations_d[event].append([event_date, status])
 
-        list_to_gui = [event_date, event, status]
+        print(self.operations_d)
 
-        return list_to_gui
+    def data_from_filters(self, start_dtime, finish_dtime, users, equipment):
+
+        i, j = 0, 0
+        connection = sqlite3.connect(DB_PATH)
+        cursor = connection.cursor()
+        str_users = ''
+        str_machines =''
+
+        while i < len(users) - 1:
+            i = i + 1
+            str_users =  str_users + 'user_name = ? OR '
+
+        str_users = str_users + 'user_name = ?'
+        str_users_search = 'SELECT user_id FROM users WHERE ' + str_users
+        cursor.execute(str_users_search, users)
+        users = cursor.fetchall()
+
+        while j < len(equipment) - 1:
+            j = j + 1
+            str_machines=  str_machines + 'machine_name = ? OR '
+
+        str_machines = str_machines + 'machine_name = ?'
+        str_machines_search = 'SELECT machine_id FROM machines WHERE ' + str_machines
+
+        cursor.execute(str_machines_search, equipment)
+        machines = cursor.fetchall()
+
+        filter_list = []
+        for user in users:
+            filter_list.append(user[0])
+
+        for machine in machines:
+            filter_list.append(machine[0])
+
+        filter_list.append(datetime.strftime(start_dtime, '%Y-%m-%d %H:%M:%S'))
+        filter_list.append(datetime.strftime(finish_dtime, '%Y-%m-%d %H:%M:%S'))
+        start_str = 'SELECT * FROM operations WHERE '
+        str_users = ''
+        str_machines = ''
+        i, j =0, 0
+
+        while i < len(users)-1:
+
+            i = i + 1
+            str_users =  str_users + 'user_id = ? OR '
+        str_users = str_users + 'user_id=?'
+
+        while j < len(machines)-1:
+
+            j = j + 1
+            str_machines = str_machines + 'machine_id=? OR '
+
+        str_machines = str_machines + 'machine_id=?'
+
+        execute_line = start_str + '(' + str_users + ')'+ ' AND ' + '(' + str_machines + ')'+ ' AND ' + 'event_date>=?'+ ' AND ' + 'event_date<=?'
+        cursor.execute(execute_line, filter_list)
+
+        row_filters_data = cursor.fetchall()
+
+        result_data = defaultdict(list)
+
+        start_status = cursor.execute('SELECT status_id FROM status_table WHERE status_name = ?',('START', )).fetchall()
+        finish_status = cursor.execute('SELECT status_id FROM status_table WHERE status_name = ?',('FINISH', )).fetchall()
+
+        #print(row_filters_data)
+
+        for lst in row_filters_data:
+
+            result_data[lst[3]].append([lst[0], lst[4]])
+
+        sorted_data = defaultdict(list)
+        print(row_filters_data)
+
+        for operation in result_data.keys():
+
+            if int(result_data[operation][-1][-1]) == finish_status[0][0]:
+
+                end_operation_str = result_data[operation][-1][-2]
+                end_operation_date = datetime.strptime(end_operation_str, '%Y-%m-%d %H:%M:%S')
+
+                start_operation_str = result_data[operation][0][0]
+                start_operation_date = datetime.strptime(start_operation_str, '%Y-%m-%d %H:%M:%S')
+
+                time_sec = (end_operation_date - start_operation_date ).total_seconds()
+                sorted_data[operation] = time_sec
+        print(sorted_data)
+        connection.commit()
+        connection.close()
+
+list_of_events = [
+    ["2020-12-01 09:00:00", 'User_2', 'Machine_1', 'PROGRAM', 'START'],
+    ["2020-12-01 10:05:00", 'User_1', 'Machine_1', 'TASK', 'START'],
+    ["2020-12-01 10:05:00", 'User_1', 'Machine_1', 'LASER', 'START'],
+    ["2020-12-01 10:05:30", 'User_2', 'Machine_1', 'GAS', 'START'],
+    ["2020-12-01 10:06:30", 'User_2', 'Machine_1', 'GAS', 'FINISH'],
+    ["2020-12-01 10:07:00", 'User_1', 'Machine_1',  'LASER', 'FINISH'],
+    ["2020-12-01 10:07:30", 'User_1', 'Machine_1', 'ERROR_1', 'FINISH'],
+    ["2020-12-01 10:09:00", 'User_1', 'Machine_1',  'TASK', 'FINISH'],
+    ["2020-12-01 10:30:00", 'User_1', 'Machine_1', 'PROGRAM', 'FINISH']
+        ]
 
 
 test_users = ['User_1', 'User_2']
 test_machines = ['Machine_1']
 
 test_parser = DataParser()
-#test_parser.add_to_db()
-#test_parser.date_to_table('2020-12-01 10:00:00', '2020-12-01 10:07:30', test_users, test_machines)
-#test_parser.machines()
-#test_parser.users()
-test_parser.parsing()
+for event in list_of_events:
+
+    test_parser.parsing(event)

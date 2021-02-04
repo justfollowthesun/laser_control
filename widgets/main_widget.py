@@ -1,10 +1,12 @@
 from PyQt5 import QtWidgets, uic, QtChart, QtCore, QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QLabel, QFrame, QGroupBox, QHBoxLayout, QGridLayout, QCalendarWidget, QTableWidget, QTableWidgetItem, QVBoxLayout
 from PyQt5.QtCore import QSize, Qt, QTimer
+from PyQt5.QtChart import QChart
 from PyQt5.QtGui import *
 from datetime import datetime
 from config import UI_MAIN_WINDOW, UI_ERRORS_WINDOW, UI_TIMERS_WINDOW, DESIGN_DIR
 import pickle
+import time
 from datetime import datetime
 from model.table_window import TableModel
 from abs.templates.spreadsheet import SpreadsheetTemplate
@@ -43,26 +45,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.login_b.clicked.connect(self.open_login_widget)
         self.graph_b.clicked.connect(self.set_up_diagram)
         self.stat_b.clicked.connect(self.set_up_table)
-
-        self.set_filters.clicked.connect(self.table_content)
-
+        self.summary_time = 0
+    #    self.set_filters.clicked.connect(self.table_content)
         self.users_box = CheckableComboBox(self)
         self.users_box.addItems(self.users)
-        self.users_box.setGeometry(870, 10, 161, 35)
+        #self.users_box.setGeometry(870, 10, 161, 35)
         self.users_box.show()
+        self.verticalLayout.addWidget(self.users_box)
 
         self.machines_box =  CheckableComboBox(self)
         self.machines_box.addItems(self.machines)
-        self.machines_box.setGeometry(870, 70, 161, 35)
         self.machines_box.show()
+        self.verticalLayout_2.addWidget(self.machines_box)
+        self.list = []
         self.create_table()
+        self.add_to_table()
 
-        self.timer = QTimer(self)
-        self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.refresh_table)
-        self.timer.start()
-
-        #self.filters.clicked.connect(self.open_filters)
+        self.timer1 = QTimer(self)
+        self.timer1.setInterval(1000)
+        self.timer1.timeout.connect(self.refresh_table)
+        self.timer1.start()
+        self.set_filters.clicked.connect(self.filter_data)
 
     def set_up_filters(self) -> list:
 
@@ -82,40 +85,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
         return start_datetime_to_str, finish_datetime_to_str, users, equipment
 
-    def table_content(self) -> None:
-
-         self.set_filters.clicked.connect(self.table_content)
-         conditions = self.set_up_filters()
-         result_data = self.parser.date_to_table(conditions[0], conditions[1], conditions[2],conditions[3])
-         summary_time = result_data['PROGRAM']
-
-         self.prog_rel.setText(str(round(result_data['PROGRAM']/summary_time, 2)*100))
-         self.task_rel.setText(str(round(result_data['TASK']/summary_time, 2)*100))
-         self.laser_rel.setText(str(round(result_data['LASER']/summary_time, 2)*100))
-         self.pause_rel.setText(str(round(result_data['PAUSE']/summary_time, 2)*100))
-         self.gas_rel.setText(str(round(result_data['GAS']/summary_time, 2)*100))
-
-         self.prog_abs.setText(self.convert_sec_to_time(result_data['PROGRAM']))
-         self.task_abs.setText(self.convert_sec_to_time(result_data['TASK']))
-         self.laser_abs.setText(self.convert_sec_to_time(result_data['LASER']))
-         self.pause_abs.setText(self.convert_sec_to_time(result_data['PAUSE']))
-         self.gas_abs.setText(self.convert_sec_to_time(result_data['GAS']))
-
-         series = QtChart.QPieSeries()
-
-         [series.append (*piece) for piece in [
-
-         ('Задание', round(result_data['TASK']/summary_time, 2)*100),
-         ('Лазер', round(result_data['LASER']/summary_time, 2)*100),
-         ('Газ', round(result_data['GAS']/summary_time, 2)*100),
-         ('Паузы', round(result_data['PAUSE']/summary_time, 2)*100)
-         ]]
-
-         pie = PieChartConstructor(series)
-         pie.add_slice(0)
-         clearLayout(self.diagram_place)
-         self.diagram_place.addWidget(pie)
-         print('all_right')
 
     def set_up_table(self):
 
@@ -152,18 +121,66 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.tableWidget.setColumnWidth(1, 250)
         self.tableWidget.setColumnWidth(2, 250)
 
-    def add_to_table(self, list):
+        self.diagram_series = QtChart.QPieSeries()
+        self.diagram_series.setLabelsPosition(QtChart.QPieSlice.LabelInsideHorizontal)
 
-        rowPos = self.tableWidget.rowCount()
+    def add_to_table(self):
 
+        dict =  {'PROGRAM': [['2020-12-01 09:00:00', 'START'], ['2020-12-01 10:30:00', 'FINISH']], 'TASK': [['2020-12-01 10:05:00', 'START'], ['2020-12-01 10:09:00', 'FINISH']], 'LASER': [['2020-12-01 10:05:00', 'START'], ['2020-12-01 10:07:00', 'FINISH']], 'GAS': [['2020-12-01 10:05:30', 'START'], ['2020-12-01 10:06:30', 'FINISH']], 'ERROR_1': [['2020-12-01 10:07:30', 'FINISH']]}
+        operations = list(dict.keys())
+        date_now = datetime.now()
 
-    def refresh_table(self, i):
+        for operation in operations:
+            if operation  not in self.list:
 
+                rowPos = self.tableWidget.rowCount()
+                self.tableWidget.insertRow(rowPos)
+                datetime_event = datetime.strptime(dict[operation][-1][-2], '%Y-%m-%d %H:%M:%S')
+                dtime_rel = (date_now - datetime_event).total_seconds()
+                dtime_abs = self.convert_sec_to_time(dtime_rel)
+                self.summary_time = self.summary_time + dtime_rel
+                self.tableWidget.setItem(rowPos, 1, QTableWidgetItem(dtime_abs))
+                self.tableWidget.setItem(rowPos, 0, QTableWidgetItem(str(dtime_rel/self.summary_time)))
+                self.tableWidget.setItem(rowPos, 2, QTableWidgetItem(operation))
+                self.list.append(operation)
+                self.diagram_series.append(operation ,dtime_rel/self.summary_time)
+
+        self.pie = PieChartConstructor(self.diagram_series)
+        self.gridLayout.addWidget(self.pie)
+
+    def refresh_table(self):
+
+        dict = self.parser.operations_d
+        dict =  {'PROGRAM': [['2021-02-02 09:00:00', 'START'], ['2020-12-01 10:30:00', 'FINISH']], 'TASK': [['2020-12-01 10:05:00', 'START'], ['2020-12-01 10:09:00', 'FINISH']], 'LASER': [['2020-12-01 10:05:00', 'START'], ['2020-12-01 10:07:00', 'FINISH']], 'GAS': [['2020-12-01 10:05:30', 'START'], ['2020-12-01 10:06:30', 'FINISH']], 'ERROR_1': [['2020-12-01 10:07:30', 'FINISH']]}
+
+        date_now = datetime.now()
         rows = self.tableWidget.rowCount()
+
         for row in range(rows):
-            _data = self.tableWidget.item(row, 3).text()
-            time_abs = self.time_abs_func([_data,])
-            self.tableWidget.setItem(row, 1, QTableWidgetItem(time_abs))
+
+            operation_name = self.tableWidget.item(row, 2).text()
+            if dict[operation_name][-1][-1]  == 'START':
+
+                datetime_event = datetime.strptime(dict[operation_name][-1][-2], '%Y-%m-%d %H:%M:%S')
+                dtime_rel = (date_now - datetime_event).total_seconds()
+                dtime_abs = self.convert_sec_to_time(dtime_rel)
+                self.tableWidget.setItem(row, 0, QTableWidgetItem(str(dtime_rel/self.summary_time)))
+                self.tableWidget.setItem(row, 1, QTableWidgetItem(str(dtime_abs)))
+                self.summary_time = self.summary_time + dtime_rel
+
+    def filter_data(self):
+
+        start_dtime = self.start_dtime.dateTime().toPyDateTime()
+        start_dtime_str = datetime.strftime(start_dtime, '%Y-%m-%d %H:%M:%S')
+
+        finish_dtime = self.finish_dtime.dateTime().toPyDateTime()
+        finish_str = datetime.strftime(finish_dtime, '%Y-%m-%d %H:%M:%S')
+
+        users = self.users_box.currentData()
+        equipment = self.machines_box.currentData()
+        self.parser.data_from_filters(start_dtime, finish_dtime, users, equipment)
+
+
 
     def graphs_content(self):
 
@@ -235,16 +252,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.timers_table.user = self.user
         print(self.user)
         self.timers_table.show()
-
-    def open_filters(self):
-
-        self.filters = FiltersWindow(self.users_db, self.machines_db)
-        self.filters.show()
-
-    def update_timer(self):
-
-        self.setItem(0, 0, QtWidgets.QTableWidgetItem(str(my_timer)))
-
 
 
     def exp_to_xlsx():
