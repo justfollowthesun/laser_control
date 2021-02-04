@@ -43,9 +43,9 @@ border: 3px solid rgb(247, 247, 247);</string>
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>70</y>
+      <y>50</y>
       <width>200</width>
-      <height>41</height>
+      <height>32</height>
      </rect>
     </property>
     <property name="maximumSize">
@@ -88,9 +88,9 @@ QPushButton:pressed {
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>70</y>
+      <y>50</y>
       <width>121</width>
-      <height>41</height>
+      <height>32</height>
      </rect>
     </property>
     <property name="maximumSize">
@@ -149,17 +149,11 @@ QPushButton:pressed {
    <widget class="QStackedWidget" name="stackedWidget">
     <property name="geometry">
      <rect>
-      <x>-10</x>
-      <y>130</y>
-      <width>1571</width>
-      <height>681</height>
+      <x>0</x>
+      <y>120</y>
+      <width>1531</width>
+      <height>711</height>
      </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
     </property>
     <property name="maximumSize">
      <size>
@@ -173,69 +167,69 @@ QPushButton:pressed {
     <property name="styleSheet">
      <string notr="true">background-color: rgb(255, 255, 255);</string>
     </property>
-    <property name="lineWidth">
-     <number>-5</number>
-    </property>
     <property name="currentIndex">
      <number>0</number>
     </property>
     <widget class="QWidget" name="start">
-     <widget class="QTableWidget" name="tableWidget">
+     <widget class="QWidget" name="gridLayoutWidget">
       <property name="geometry">
        <rect>
-        <x>20</x>
-        <y>20</y>
-        <width>760</width>
-        <height>261</height>
+        <x>830</x>
+        <y>0</y>
+        <width>701</width>
+        <height>711</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="diagram_place"/>
+     </widget>
+     <widget class="QLabel" name="label_53">
+      <property name="geometry">
+       <rect>
+        <x>270</x>
+        <y>640</y>
+        <width>261</width>
+        <height>41</height>
        </rect>
       </property>
       <property name="font">
        <font>
-        <pointsize>12</pointsize>
+        <family>Segoe UI</family>
+        <pointsize>14</pointsize>
        </font>
       </property>
-      <property name="styleSheet">
-       <string notr="true"> border-color: grey;
-</string>
+      <property name="text">
+       <string/>
       </property>
-      <property name="lineWidth">
-       <number>0</number>
-      </property>
-      <property name="showGrid">
-       <bool>true</bool>
-      </property>
-      <property name="wordWrap">
-       <bool>true</bool>
-      </property>
-      <property name="cornerButtonEnabled">
-       <bool>false</bool>
-      </property>
-      <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>237</number>
-      </attribute>
-      <attribute name="horizontalHeaderMinimumSectionSize">
-       <number>37</number>
-      </attribute>
-      <attribute name="verticalHeaderVisible">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="verticalHeaderHighlightSections">
-       <bool>false</bool>
-      </attribute>
-      <attribute name="verticalHeaderStretchLastSection">
-       <bool>false</bool>
-      </attribute>
      </widget>
-     <widget class="QWidget" name="gridLayoutWidget">
+     <widget class="QLabel" name="label_57">
       <property name="geometry">
        <rect>
-        <x>790</x>
-        <y>20</y>
-        <width>751</width>
-        <height>641</height>
+        <x>10</x>
+        <y>640</y>
+        <width>261</width>
+        <height>41</height>
        </rect>
       </property>
-      <layout class="QGridLayout" name="gridLayout_2"/>
+      <property name="font">
+       <font>
+        <family>Segoe UI</family>
+        <pointsize>14</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Материал №2</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="gridLayoutWidget_3">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>20</y>
+        <width>771</width>
+        <height>181</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="table_place"/>
      </widget>
     </widget>
     <widget class="QWidget" name="diagram">
@@ -323,7 +317,7 @@ QPushButton:pressed {
       <x>10</x>
       <y>10</y>
       <width>331</width>
-      <height>41</height>
+      <height>32</height>
      </rect>
     </property>
     <property name="maximumSize">
@@ -366,7 +360,7 @@ QPushButton:pressed {
      <rect>
       <x>350</x>
       <y>10</y>
-      <width>141</width>
+      <width>161</width>
       <height>35</height>
      </rect>
     </property>
@@ -406,8 +400,8 @@ QPushButton:pressed {
    <widget class="QPushButton" name="login_b_5">
     <property name="geometry">
      <rect>
-      <x>350</x>
-      <y>70</y>
+      <x>360</x>
+      <y>50</y>
       <width>141</width>
       <height>35</height>
      </rect>
@@ -448,7 +442,7 @@ QPushButton:pressed {
    <widget class="QPushButton" name="set_filters">
     <property name="geometry">
      <rect>
-      <x>1080</x>
+      <x>1020</x>
       <y>10</y>
       <width>201</width>
       <height>41</height>
@@ -492,10 +486,10 @@ QPushButton:pressed {
    <widget class="QDateTimeEdit" name="start_dtime">
     <property name="geometry">
      <rect>
-      <x>500</x>
-      <y>10</y>
-      <width>171</width>
-      <height>41</height>
+      <x>510</x>
+      <y>20</y>
+      <width>201</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
@@ -511,10 +505,10 @@ QPushButton:pressed {
    <widget class="QDateTimeEdit" name="finish_dtime">
     <property name="geometry">
      <rect>
-      <x>500</x>
-      <y>70</y>
-      <width>171</width>
-      <height>41</height>
+      <x>510</x>
+      <y>60</y>
+      <width>201</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
@@ -530,8 +524,8 @@ QPushButton:pressed {
    <widget class="QPushButton" name="login_b_6">
     <property name="geometry">
      <rect>
-      <x>690</x>
-      <y>10</y>
+      <x>730</x>
+      <y>20</y>
       <width>161</width>
       <height>35</height>
      </rect>
@@ -572,8 +566,8 @@ QPushButton:pressed {
    <widget class="QPushButton" name="login_b_7">
     <property name="geometry">
      <rect>
-      <x>690</x>
-      <y>70</y>
+      <x>730</x>
+      <y>60</y>
       <width>161</width>
       <height>35</height>
      </rect>
@@ -614,7 +608,7 @@ QPushButton:pressed {
    <widget class="QPushButton" name="set_filters_2">
     <property name="geometry">
      <rect>
-      <x>1080</x>
+      <x>1020</x>
       <y>60</y>
       <width>201</width>
       <height>41</height>
@@ -658,7 +652,7 @@ QPushButton:pressed {
    <widget class="QPushButton" name="timers_journal">
     <property name="geometry">
      <rect>
-      <x>1310</x>
+      <x>1260</x>
       <y>10</y>
       <width>231</width>
       <height>41</height>
@@ -691,44 +685,6 @@ QPushButton:pressed {
     </property>
     <property name="text">
      <string>Журнал таймеров</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="timers_journal_3">
-    <property name="geometry">
-     <rect>
-      <x>1310</x>
-      <y>60</y>
-      <width>231</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <family>Segoe UI</family>
-      <pointsize>12</pointsize>
-     </font>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QPushButton {
-	background-color: white ;
-	border-radius:5px;
-	color: black;
-	border: 2px solid rgb(247, 247, 247);
-	border-color: grey
-}
-
-QPushButton:hover {
-	border: 2px solid rgb(247, 247, 247);
-	border-color: orange;
-}
-
-QPushButton:pressed {
-	background-color: rgb(88, 88, 88);
-}
-</string>
-    </property>
-    <property name="text">
-     <string>Экспорт данных</string>
     </property>
    </widget>
   </widget>

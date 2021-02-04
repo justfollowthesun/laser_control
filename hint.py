@@ -1,97 +1,153 @@
 import sys
-from PyQt5.QtWidgets import (QApplication, QMainWindow)
-from PyQt5.QtChart import QChart, QChartView, QHorizontalBarSeries, QBarSet, QBarCategoryAxis, QValueAxis
-from PyQt5.Qt import Qt
-from PyQt5.QtGui import QPainter
+import random                                                                   # +++
+from datetime import datetime
+from PyQt5.QtWidgets import QApplication, QMainWindow, QGridLayout, QWidget, \
+    QTableWidget, QTableWidgetItem
+from PyQt5.QtCore import QSize, Qt, QThread, pyqtSignal, QTimer                 # *** QTimer
+from PyQt5.QtGui import QFont
+
+
+class DataParser(QThread):
+    data_signal = pyqtSignal(list)
+
+    def __init__(self):
+        super(DataParser, self).__init__()
+        self._date = ''
+        self._nameProg = ''
+        self._start = ''
+        self._flag = True
+
+    def run(self):
+        self.msleep(2000)
+        # вставьте в этот цикл свою логику получения списка list_to_add
+        # у меня это рандомный _list, который формируется каждые 5 секунд,
+        # чтобы вы спокойно могли наблюдать что происходит
+        while(self._flag):
+            #             '2021-02-02 09:00:00' обратите внимание я поменял дату
+            self._date = f'2021-02-03 {random.randrange(0, 24):0>2}:'\
+                          f'{random.randrange(0, 60):0>2}:'\
+                          f'{random.randrange(0, 60):0>2}'
+            self._nameProg = f'PROGRAM {random.randrange(1,99):0>2}'
+            self._start = 'Что-то еще?'
+
+            _list = [self._date, self._nameProg, self._start]
+            self.data_signal.emit(_list)                  # отдаем список в основной поток
+            self.msleep(5000)                                            # спим 5 секунд    !!!
+
 
 class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-	def __init__(self):
+        self.setMinimumSize(QSize(480, 100))
+        self.setWindowTitle("Работа с QTableWidget")
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
 
-		super().__init__()
-		self.resize(800, 600)
+        grid_layout = QGridLayout(central_widget)         # - self  --> + central_widget !!!
+#        central_widget.setLayout(grid_layout)            # --- нет
 
-		set0 = QBarSet('X0')
-		set1 = QBarSet('X1')
-		set2 = QBarSet('X2')
-		set3 = QBarSet('X3')
-		set4 = QBarSet('X4')
+        self.tableWidget = QTableWidget(self)
+        header_font = QFont('Sergoe UI', 12)
+        header_font.setWeight(QFont.Bold)
 
-		set0.append([1, 2, 3, 4, 5, 6])
-		set1.append([5, 0, 0, 4, 0, 7])
-		set2.append([3, 5, 8, 13, 8, 5])
-		set3.append([5, 6, 7, 3, 4, 5])
-		set4.append([9, 7, 5, 3, 1, 2])
+        self.tableWidget.setColumnCount(4)                #(3) обратите внимание я добавил столбец
 
-		series = QHorizontalBarSeries()
-		series.append(set0)
-		series.append(set1)
-		series.append(set2)
-		series.append(set3)
-		series.append(set4)
+        self.tableWidget.setHorizontalHeaderLabels(
+            [ "Относительное время","Абсолютное время", "Название операции"]
+        )
+        self.tableWidget.horizontalHeaderItem(0).setFont(header_font)
+        self.tableWidget.horizontalHeaderItem(1).setFont(header_font)
+        self.tableWidget.horizontalHeaderItem(2).setFont(header_font)
+        self.tableWidget.setColumnWidth(0, 190)     # 250
+        self.tableWidget.setColumnWidth(1, 180)     # 250
+        self.tableWidget.setColumnWidth(2, 180)     # 250
+        self.tableWidget.setColumnWidth(3, 180)     # обратите внимание я добавил столбец
 
-		chart = QChart()
-		chart.addSeries(series)
-		chart.setTitle('Horizontal Bar Chart Demo')
+# ВНИМАНИЕ !!! раскомментируйте строку ниже, чтобы Скрыть столбец с индексом 3       !!!
+        self.tableWidget.setColumnHidden(3, True)   # Скрыть столбец с индексом 3  !!!
 
-		chart.setAnimationOptions(QChart.SeriesAnimations)
+#        list_to_add = ['2021-02-03 09:00:00', 'PROGRAM', 'START'] # обратите внимание я поменял дату
+        list_to_add = ['2021-02-03 17:20:00', 'PROGRAM', 'START']  # !!!
 
-		months = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'June')
+        rowPos = self.tableWidget.rowCount()
+        time_abs = self.time_abs_func(list_to_add)
+#-        print(f'time_abs = {time_abs}')
 
-		axisY = QBarCategoryAxis()
-		axisY.append(months)
-		chart.addAxis(axisY, Qt.AlignLeft)
-		series.attachAxis(axisY)
+        self.tableWidget.insertRow(rowPos)
 
-		axisX = QValueAxis()
-		chart.addAxis(axisX, Qt.AlignBottom)
-		series.attachAxis(axisX)
+        self.tableWidget.setItem(rowPos, 1, QTableWidgetItem(time_abs))
+        self.tableWidget.setItem(rowPos, 2, QTableWidgetItem(list_to_add[1]))
+        # обратите внимание я добавил столбец vvv                               !!!
+        self.tableWidget.setItem(rowPos, 3, QTableWidgetItem(list_to_add[0]))
 
-		axisX.applyNiceNumbers()
+        #grid_layout.addWidget(table, 0, 0)                   # Adding the table to the grid
+        grid_layout.addWidget(self.tableWidget, 0, 0)         # +++ !!!
 
-		chart.legend().setVisible(True)
-		chart.legend().setAlignment(Qt.AlignBottom)
+        self.thread = DataParser()
+        self.thread.data_signal.connect(self.update_data)
+        self.thread.start()
 
-		chartView = QChartView(chart)
-		chartView.setRenderHint(QPainter.Antialiasing)
-		self.setCentralWidget(chartView)
+        self.timer = QTimer(self, interval=1000, timeout=self.updateTime)   # *** QTimer
+        self.timer.start()                                                  # *** QTimer
 
-if __name__ == '__main__':
-	app = QApplication(sys.argv)
+    def updateTime(self):                                                   # *** QTimer
+        # обновляем значения в таблице
+        rows = self.tableWidget.rowCount()
+        for row in range(rows):
+            _data = self.tableWidget.item(row, 3).text()
+            time_abs = self.time_abs_func([_data,])
+            # обратите внимание, что я вставляю обновленные данные               !!!
+            # в колонку с индексом 0 (ноль) - чтобы вы видели, что происходит    !!!
+#            self.tableWidget.setItem(row, 0, QTableWidgetItem(time_abs))
+            self.tableWidget.setItem(row, 1, QTableWidgetItem(time_abs))
 
-	window = MainWindow()
-	window.show()
+    def time_abs_func(self, list_to_add):
+        date_now = datetime.now()
+        datetime_event = datetime.strptime(list_to_add[0], '%Y-%m-%d %H:%M:%S')
+        delta_sec = (datetime.now() - datetime_event).total_seconds()
+        return self.convert_sec_to_time(delta_sec)
 
-	sys.exit(app.exec_())
+    def convert_sec_to_time(self, seconds) -> str:
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
+
+    def update_data(self, _data):
+        """ Тут мы добавляем новую запись в таблицу
+            и динамически обновляем значения в таблице.
+            _data - это полученный из класса DataParser - list_to_add
+        """
+        time_abs = self.time_abs_func(_data)
+
+#        rowPos = self.tableWidget.rowCount()         # добавить в конец
+        rowPos = 0                                    # добавить в начало
+
+        # добавляем новую запись
+        self.tableWidget.insertRow(rowPos)
+        self.tableWidget.setItem(rowPos, 1, QTableWidgetItem(time_abs))
+        self.tableWidget.setItem(rowPos, 2, QTableWidgetItem(_data[1]))
+        self.tableWidget.setItem(rowPos, 3, QTableWidgetItem(_data[0]))  # !!!
+
+'''
+        # обновляем значения в таблице
+        rows = self.tableWidget.rowCount()
+
+#        for row in range(0, rows-1):                 # для rowPos = self.tableWidget.rowCount()
+        for row in range(1, rows):                    # для rowPos = 0
+            _data = self.tableWidget.item(row, 3).text()
+            time_abs = self.time_abs_func([_data,])
+            # обратите внимание, что я вставляю обновленные данные               !!!
+            # в колонку с индексом 0 (ноль) - чтобы вы видели, что происходит    !!!
+#            self.tableWidget.setItem(row, 0, QTableWidgetItem(time_abs))
+            self.tableWidget.setItem(row, 1, QTableWidgetItem(time_abs))
+'''
 
 
-# import plotly.offline as po
-# import plotly.graph_objs as go
-# from PyQt5 import QtWebEngineWidget
-# from PyQt5.QtWebEngineWidgets import QWebEngineView
-# from PyQt5 import QtCore, QtWidgets
-# import sys
-#
-#
-# def show_qt(fig):
-#     raw_html = '<html><head><meta charset="utf-8" />'
-#     raw_html += '<script src="https://cdn.plot.ly/plotly-latest.min.js"></script></head>'
-#     raw_html += '<body>'
-#     raw_html += po.plot(fig, include_plotlyjs=False, output_type='div')
-#     raw_html += '</body></html>'
-#
-#     fig_view = QWebEngineView()
-#     # setHtml has a 2MB size limit, need to switch to setUrl on tmp file
-#     # for large figures.
-#     fig_view.setHtml(raw_html)
-#     fig_view.show()
-#     fig_view.raise_()
-#     return fig_view
-#
-#
-# if __name__ == '__main__':
-#     app = QtWidgets.QApplication(sys.argv)
-#
-#     fig = go.Figure(data=[{'type': 'scattergl', 'y': [2, 1, 3, 1]}])
-#     fig_view = show_qt(fig)
-#     sys.exit(app.exec_())
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    app.setFont(QFont("Times", 10, QFont.Bold))
+    mw = MainWindow()
+    mw.resize(810, 500)
+    mw.show()
+    sys.exit(app.exec_())

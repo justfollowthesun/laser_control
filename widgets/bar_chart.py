@@ -10,15 +10,16 @@ class BarChart(QtWidgets.QMainWindow):
 	def __init__(self):
 
 		super().__init__()
-        
+		
+		self.resize(800, 600)
 
-		set0 = QBarSet('X0')
-		set1 = QBarSet('X1')
-		set2 = QBarSet('X2')
-		set3 = QBarSet('X3')
-		set4 = QBarSet('X4')
+		set0 = QBarSet('Выполнение программы')
+		set1 = QBarSet('Выполнение задания')
+		set2 = QBarSet('Работа лазера')
+		set3 = QBarSet('Паузы')
+		set4 = QBarSet('Газ')
 
-		set0.append([1, 2, 3, 4, 5, 6])
+		set0.append([1, 2])
 		set1.append([5, 0, 0, 4, 0, 7])
 		set2.append([3, 5, 8, 13, 8, 5])
 		set3.append([5, 6, 7, 3, 4, 5])
@@ -57,10 +58,11 @@ class BarChart(QtWidgets.QMainWindow):
 		chartView.setRenderHint(QPainter.Antialiasing)
 		self.setCentralWidget(chartView)
 
-# if __name__ == '__main__':
-# 	app = QApplication(sys.argv)
-#
-# 	window = MainWindow()
-# 	window.show()
-#
-# 	sys.exit(app.exec_())
+if __name__ == '__main__':
+
+	app = QApplication(sys.argv)
+
+	window = MainWindow()
+	window.show()
+
+	sys.exit(app.exec_())

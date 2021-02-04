@@ -1,4 +1,7 @@
-from PyQt5 import QtWidgets, uic, QtChart, QtCore
+from PyQt5 import QtWidgets, uic, QtChart, QtCore, QtGui
+from PyQt5.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QLabel, QFrame, QGroupBox, QHBoxLayout, QGridLayout, QCalendarWidget, QTableWidget, QTableWidgetItem, QVBoxLayout
+from PyQt5.QtCore import QSize, Qt, QTimer
+from PyQt5.QtGui import *
 from datetime import datetime
 from config import UI_MAIN_WINDOW, UI_ERRORS_WINDOW, UI_TIMERS_WINDOW, DESIGN_DIR
 import pickle
@@ -7,14 +10,14 @@ from model.table_window import TableModel
 from abs.templates.spreadsheet import SpreadsheetTemplate
 from abs.templates.plotting.qtchart import PieChartConstructor
 from abs.qt import MoveableWidget
-
+import threading
 from widgets.errors_table import ErrorsWindow
 from widgets.timers_table import TimersWindow
 #from widgets.login_widget import LoginWindow
 #from widgets.filters import FiltersWindow
 from widgets.bar_chart import BarChart
 from widgets.combobox import CheckableComboBox
-
+from storage.timers_database import Timers_Database
 from data_parser import DataParser
 
 Ui_MainWindow, _ = uic.loadUiType(UI_MAIN_WINDOW, import_from = DESIGN_DIR)
@@ -31,27 +34,33 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
         self.user = ('default', 'default', 'default', 1)
 
-
+        self.timers_db = Timers_Database()
         self.parser = DataParser()
         self.users = self.parser.users()
         self.machines = self.parser.machines()
-
-        self.errors_journal.clicked.connect(self.open_errors_table)
+        #self.errors_journal.clicked.connect(self.open_errors_table)
         self.timers_journal.clicked.connect(self.open_timers_table)
         self.login_b.clicked.connect(self.open_login_widget)
         self.graph_b.clicked.connect(self.set_up_diagram)
-        self.stat_b.mouseReleaseEvent = lambda e : self.stackedWidget.setCurrentIndex(0)
+        self.stat_b.clicked.connect(self.set_up_table)
+
+        self.set_filters.clicked.connect(self.table_content)
 
         self.users_box = CheckableComboBox(self)
         self.users_box.addItems(self.users)
-        self.users_box.setGeometry(760, 40, 161, 35)
+        self.users_box.setGeometry(870, 10, 161, 35)
         self.users_box.show()
 
         self.machines_box =  CheckableComboBox(self)
         self.machines_box.addItems(self.machines)
-        self.machines_box.setGeometry(1100, 40, 161, 35)
+        self.machines_box.setGeometry(870, 70, 161, 35)
         self.machines_box.show()
-        self.set_filters.clicked.connect(self.set_up_filters)
+        self.create_table()
+
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.refresh_table)
+        self.timer.start()
 
         #self.filters.clicked.connect(self.open_filters)
 
@@ -71,9 +80,137 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         users = self.users_box.currentData()
         equipment = self.machines_box.currentData()
 
-
         return start_datetime_to_str, finish_datetime_to_str, users, equipment
 
+    def table_content(self) -> None:
+
+         self.set_filters.clicked.connect(self.table_content)
+         conditions = self.set_up_filters()
+         result_data = self.parser.date_to_table(conditions[0], conditions[1], conditions[2],conditions[3])
+         summary_time = result_data['PROGRAM']
+
+         self.prog_rel.setText(str(round(result_data['PROGRAM']/summary_time, 2)*100))
+         self.task_rel.setText(str(round(result_data['TASK']/summary_time, 2)*100))
+         self.laser_rel.setText(str(round(result_data['LASER']/summary_time, 2)*100))
+         self.pause_rel.setText(str(round(result_data['PAUSE']/summary_time, 2)*100))
+         self.gas_rel.setText(str(round(result_data['GAS']/summary_time, 2)*100))
+
+         self.prog_abs.setText(self.convert_sec_to_time(result_data['PROGRAM']))
+         self.task_abs.setText(self.convert_sec_to_time(result_data['TASK']))
+         self.laser_abs.setText(self.convert_sec_to_time(result_data['LASER']))
+         self.pause_abs.setText(self.convert_sec_to_time(result_data['PAUSE']))
+         self.gas_abs.setText(self.convert_sec_to_time(result_data['GAS']))
+
+         series = QtChart.QPieSeries()
+
+         [series.append (*piece) for piece in [
+
+         ('Задание', round(result_data['TASK']/summary_time, 2)*100),
+         ('Лазер', round(result_data['LASER']/summary_time, 2)*100),
+         ('Газ', round(result_data['GAS']/summary_time, 2)*100),
+         ('Паузы', round(result_data['PAUSE']/summary_time, 2)*100)
+         ]]
+
+         pie = PieChartConstructor(series)
+         pie.add_slice(0)
+         clearLayout(self.diagram_place)
+         self.diagram_place.addWidget(pie)
+         print('all_right')
+
+    def set_up_table(self):
+
+        self.stackedWidget.setCurrentIndex(0)
+        self.table_content()
+        print('11')
+
+    def set_up_diagram(self):
+
+        operation_set = ['PROGRAM', 'TASK', 'PAUSE', 'LASER', 'GAS']
+
+        self.stackedWidget.setCurrentIndex(1)
+        filter_graphs_box = CheckableComboBox(self)
+        filter_graphs_box.addItems(operation_set)
+        #self.stackedWidget.filter_graphs_box.setGeometry(1180, 110, 161, 35)
+        #filter_graphs_box.setGeometry(100, 110, 161, 35)
+        #self.stackedWidget.addWidget(filter_graphs_box)
+        #filter_graphs_box.show()
+        #self.set_filters.clicked.connect(self.graphs_content)
+        self.graphs_content()
+        print('22')
+
+    def create_table(self):
+
+        header_font = QFont('Sergoe UI', 12)
+        header_font.setWeight(QFont.Bold)
+
+        self.tableWidget.setColumnCount(3)
+        self.tableWidget.setHorizontalHeaderLabels([ "Относительное время","Абсолютное время", "Название операции"])
+        self.tableWidget.horizontalHeaderItem(0).setFont(header_font)
+        self.tableWidget.horizontalHeaderItem(1).setFont(header_font)
+        self.tableWidget.horizontalHeaderItem(2).setFont(header_font)
+        self.tableWidget.setColumnWidth(0, 250)
+        self.tableWidget.setColumnWidth(1, 250)
+        self.tableWidget.setColumnWidth(2, 250)
+
+    def add_to_table(self, list):
+
+        rowPos = self.tableWidget.rowCount()
+
+
+    def refresh_table(self, i):
+
+        rows = self.tableWidget.rowCount()
+        for row in range(rows):
+            _data = self.tableWidget.item(row, 3).text()
+            time_abs = self.time_abs_func([_data,])
+            self.tableWidget.setItem(row, 1, QTableWidgetItem(time_abs))
+
+    def graphs_content(self):
+
+        self.set_filters.clicked.connect(self.graphs_content)
+        clearLayout(self.machines_layout)
+        clearLayout(self.users_layout)
+        clearLayout(self.graphs_layout)
+        conditions = self.set_up_filters()
+        operations = ['1', '2', '3']
+        result_data = self.parser.date_to_table(conditions[0], conditions[1], conditions[2], conditions[3])
+        self.stackedWidget.setCurrentIndex(1)
+
+        machines = conditions[3]
+        users = conditions[2]
+
+        for machine in machines:
+
+            lbl = QLabel()
+            lbl.setText(machine)
+            self.machines_layout.addWidget(lbl)
+
+            for user in users:
+
+                groupbox = QGroupBox()
+                lbl = QLabel()
+                lbl.setText(user)
+                self.users_layout.addWidget(lbl)
+                base_layout = QGridLayout()
+                self.graphs_layout.addLayout(base_layout)
+
+                _ = 0
+                for operation in operations:
+                    _ =_ + 1
+                    layout = QHBoxLayout()
+                    frame1 = QFrame()
+                    frame2 = QFrame()
+                    layout.addWidget(frame1)
+                    layout.addWidget(frame2)
+                    base_layout.addLayout(layout, _ , 2)
+
+
+    def convert_sec_to_time(self, seconds) -> str:
+
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        return '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
 
 
     def open_errors_table(self):
@@ -92,20 +229,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
         self.user = self.login_widget.user
 
-
     def open_timers_table(self):
 
         self.timers_table = TimersWindow(self.timers_db)
         self.timers_table.user = self.user
         print(self.user)
         self.timers_table.show()
-
-    def set_up_diagram(self):
-
-        clearLayout(self.graph_place)
-        self.stackedWidget.setCurrentIndex(1)
-        self.graph_place.addWidget(BarChart())
-
 
     def open_filters(self):
 
@@ -116,65 +245,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
         self.setItem(0, 0, QtWidgets.QTableWidgetItem(str(my_timer)))
 
+
+
     def exp_to_xlsx():
 
         pass
-
-    #def create_table(self, table_template, test_data):
-
-        table_widget = table_template
-        table_widget.setRowCount(5)
-        table_widget.setColumnCount(3)
-        table_widget.setCurrentCell(0, 0)
-
-        table_widget.setHorizontalHeaderItem(0, QtWidgets.QTableWidgetItem('Параметр'))
-        table_widget.setHorizontalHeaderItem(1, QtWidgets.QTableWidgetItem('Время, сек'))
-        table_widget.setHorizontalHeaderItem(2, QtWidgets.QTableWidgetItem('Относительное время, %'))
-
-        table_widget.setItem(0, 0, QtWidgets.QTableWidgetItem('Работа программы'))
-        table_widget.setItem(0, 1, QtWidgets.QTableWidgetItem(str(test_data['Program_total_abs'])))
-
-        table_widget.setItem(1, 0, QtWidgets.QTableWidgetItem('Выполнение задачи'))
-        table_widget.setItem(1, 1, QtWidgets.QTableWidgetItem(str(test_data['Task_total_abs'])))
-
-        table_widget.setItem(2, 0, QtWidgets.QTableWidgetItem('Работа лазера'))
-        table_widget.setItem(2, 1, QtWidgets.QTableWidgetItem(str(test_data['Laser_total_abs'])))
-
-        table_widget.setItem(3, 0, QtWidgets.QTableWidgetItem('Паузы'))
-        table_widget.setItem(3, 1, QtWidgets.QTableWidgetItem(str(test_data['Pause_total_abs'])))
-
-        table_widget.setItem(4, 0, QtWidgets.QTableWidgetItem('Газ'))
-        table_widget.setItem(4, 1, QtWidgets.QTableWidgetItem(str(test_data['Gas_total_abs'])))
-
-        table_widget.setItem(0, 2, QtWidgets.QTableWidgetItem(str(test_data['Program_total_rel']*100)))
-
-        table_widget.setItem(1, 2, QtWidgets.QTableWidgetItem(str(test_data['Task_total_rel']*100)))
-
-        table_widget.setItem(2, 2, QtWidgets.QTableWidgetItem(str(test_data['Laser_total_rel']*100)))
-
-        table_widget.setItem(3, 2, QtWidgets.QTableWidgetItem(str(test_data['Pause_total_rel']*100)))
-
-        table_widget.setItem(4, 2, QtWidgets.QTableWidgetItem(str(test_data['Gas_total_rel']*100)))
-
-        return table_widget
-        #return table_widget
-
-
-    def create_piechart(self) -> QtChart.QChartView:
-
-        series = QtChart.QPieSeries()
-
-        [series.append (*piece) for piece in [
-        ('Лазер',test_data['Laser_total_rel']*100),
-        ('Задача',test_data['Task_total_rel']*100),
-        ('Паузы',test_data['Pause_total_rel']*100),
-        ('Газ',test_data['Gas_total_rel']*100),
-        ]]
-
-        pie = PieChartConstructor(series)
-        pie.add_slice(0)
-
-        return pie
 
 
     def filters(self):
