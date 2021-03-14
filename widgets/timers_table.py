@@ -107,7 +107,7 @@ class TimersWindow(QtWidgets.QWidget, Ui_TimersWindow):
             self.tableWidget.setItem(_, 1, QTableWidgetItem(new_value))
             _ = _ + 1
 
-    def convert_sec_to_time(self, seconds) -> str:
+    def convert_sec_to_time_timers(self, seconds) -> str:
 
         days, remainder = divmod(seconds, 86400)
         hours, remainder = divmod(remainder, 3600)

@@ -1,0 +1,10 @@
+User_2; Machine_1; PROGRAM; START
+User_1; Machine_1; TASK; START
+User_1; Machine_1; LASER; START
+User_2; Machine_1; GAS; START;
+User_2; Machine_1; GAS; FINISH;
+User_1; Machine_1;  LASER; FINISH;
+User_1; Machine_1; ERROR_1; FINISH;
+User_1; Machine_1;  TASK; FINISH;
+User_1; Machine_1; PROGRAM; FINISH
+        

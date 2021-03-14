@@ -1,59 +1,27 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow
-import sys
-from PyQt5.QtChart import QChart, QChartView, QPieSeries, QPieSlice
-from PyQt5.QtGui import QPainter, QPen, QFont
-from PyQt5.QtCore import Qt
+import socket
+import threading
+
+bind_ip = '127.0.0.1'
+bind_port = 12345
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind((bind_ip, bind_port))
+server.listen(5)  # max backlog of connections
+
+print('Listening on {}:{}'.format(bind_ip, bind_port))
 
 
+def handle_client_connection(client_socket):
+    request = client_socket.recv(1024)
+    print ('Received {}'.format(request))
+    client_socket.send('ACK!')
+    client_socket.close()
 
-
-class Window(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("DonutChart Example")
-        self.setGeometry(100,100, 1280,600)
-
-        self.show()
-
-        self.create_donutchart()
-
-
-
-    def create_donutchart(self):
-
-        series = QPieSeries()
-        series.setHoleSize(0.35)
-        series.append("Protein 4.2%", 4.2)
-        slice = QPieSlice()
-        slice = series.append("Fat 15.6%", 15.6)
-        slice.setExploded()
-        slice.setLabelVisible()
-        series.append("Other 23.8%", 23.8);
-        series.append("Carbs 56.4%", 56.4);
-
-        chart = QChart()
-        chart.legend().hide()
-        chart.addSeries(series)
-
-        chart.setAnimationOptions(QChart.SeriesAnimations)
-        chart.setTitle("DonutChart Example")
-        #chart.setTheme(QChart.ChartThemeBlueCerulean)
-
-
-
-        chartview = QChartView(chart)
-        chartview.setRenderHint(QPainter.Antialiasing)
-
-
-        self.setCentralWidget(chartview)
-
-
-
-
-
-
-
-App = QApplication(sys.argv)
-window = Window()
-sys.exit(App.exec_())
+while True:
+    client_sock, address = server.accept()
+    print ('Accepted connection from {}:{}'.format(address[0], address[1]))
+    client_handler = threading.Thread(
+        target=handle_client_connection,
+        args=(client_sock,)  # without comma you'd get a... TypeError: handle_client_connection() argument after * must be a sequence, not _socketobject
+    )
+    client_handler.start()

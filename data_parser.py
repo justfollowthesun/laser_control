@@ -1,10 +1,14 @@
 import os
 import sqlite3
+import socket
+import codecs
+import threading
 from config import DB_PATH, DB_DIR
 from datetime import datetime, timedelta
 from input_data import data_generator
 from PyQt5.QtCore import QSize, Qt, QThread, pyqtSignal, QTimer
 from collections import defaultdict
+
 
 class DataParser():
 
@@ -12,10 +16,53 @@ class DataParser():
 
         if not os.path.exists(DB_DIR):
             os.mkdir(DB_DIR)
-        #self.data = InputData()
+        #self.data_recieve()
         #self.list = self.data.data_to_pars()
         #self.data_signal = pyqtSignal(self.list)
         self.operations_d = defaultdict(list)
+        x = threading.Thread(target = self.ip_connect)
+        x.start()
+
+    def smth_func(self, data):
+        print(data)
+
+    def ip_connect(self):
+
+        HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
+        PORT = 12345       # Port to listen on (non-privileged ports are > 1023)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((HOST, PORT))
+            s.listen()
+            conn, addr = s.accept()
+            with conn:
+                print('Connected by', addr)
+                while True:
+                    request = conn.recv(1024)
+                    msg_size = 0
+                    if msg_size == 0:
+                        if len(request) < 2:
+                            pass
+                        else:
+                            len_message = int.from_bytes(request[:2], 'big')
+
+                            if len(request) < len_message:
+                                pass
+                            else:
+                                message = request[2:]
+                                message = codecs.decode(message, 'UTF-8')
+                                message = message[1 : -1]
+                                msg_to_list = message.split(',')
+                                data = []
+
+                                for msg in msg_to_list:
+                                    msg = msg.split(':')
+                                    msg = msg[1][1:-1]
+                                    data.append(msg)
+                                    msg_size == 0
+                    self.smth_func(data)
+                    self.parsing(data)
+                    if not data:
+                        break
 
     def filters(self, start_data, finish_data, users, machines) -> list:
 
@@ -79,7 +126,6 @@ class DataParser():
             users_res.append(user[0])
 
         return users_res
-
 
     def parsing(self, data):
 
@@ -147,7 +193,7 @@ class DataParser():
 
         while j < len(equipment) - 1:
             j = j + 1
-            str_machines=  str_machines + 'machine_name = ? OR '
+            str_machines = str_machines + 'machine_name = ? OR '
 
         str_machines = str_machines + 'machine_name = ?'
         str_machines_search = 'SELECT machine_id FROM machines WHERE ' + str_machines
@@ -213,9 +259,73 @@ class DataParser():
 
                 time_sec = (end_operation_date - start_operation_date ).total_seconds()
                 sorted_data[operation] = time_sec
-        print(sorted_data)
+
         connection.commit()
         connection.close()
+        return sorted_data
+
+    def hours_from_user(self, user:str) -> int:
+
+        '''
+        Return number of hour for choisen user
+        '''
+
+        connection = sqlite3.connect(DB_PATH) #connect to database
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT user_id FROM users WHERE user_name=?", (user,)) #select id from choisen user
+        id = cursor.fetchone()
+
+        cursor.execute("SELECT event_date FROM operations WHERE user_id = ?", (id[0], ))
+
+        dtime_for_user = cursor.fetchall()
+
+        summ = 0
+        start_dtime_str = dtime_for_user[0]
+
+        start_dtime = datetime.strptime(start_dtime_str[0], '%Y-%m-%d %H:%M:%S') #convert to python datetime start datetime in the selected values from operation table
+
+        for dtime in dtime_for_user:
+
+            python_dtime = datetime.strptime(dtime[0], '%Y-%m-%d %H:%M:%S')
+            sec_to_append = (python_dtime - start_dtime).total_seconds()
+            summ = summ + sec_to_append
+
+        connection.commit()
+        connection.close()
+        total_hours = int(summ/3600)
+
+    def hours_from_machine(self, machine:str) -> int:
+
+        '''
+        Return number of hour for choisen user
+        '''
+
+        connection = sqlite3.connect(DB_PATH) #connect to database
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT machine_id FROM machines WHERE machine_name=?", (user,)) #select id from choisen user
+        id = cursor.fetchone()
+
+        cursor.execute("SELECT event_date FROM operations WHERE machine_id = ?", (id[0], ))
+
+        dtime_for_machine= cursor.fetchall()
+
+        summ = 0
+        start_dtime_str = dtime_for_machine[0]
+
+        start_dtime = datetime.strptime(start_dtime_str[0], '%Y-%m-%d %H:%M:%S') #convert to python datetime start datetime in the selected values from operation table
+
+        for dtime in dtime_for_machine:
+
+            python_dtime = datetime.strptime(dtime[0], '%Y-%m-%d %H:%M:%S')
+            sec_to_append = (python_dtime - start_dtime).total_seconds()
+            summ = summ + sec_to_append
+
+        connection.commit()
+        connection.close()
+        total_hours = int(summ/3600)
+
 
 list_of_events = [
     ["2020-12-01 09:00:00", 'User_2', 'Machine_1', 'PROGRAM', 'START'],
@@ -230,10 +340,12 @@ list_of_events = [
         ]
 
 
-test_users = ['User_1', 'User_2']
-test_machines = ['Machine_1']
-
+# test_users = ['User_1', 'User_2']
+# test_machines = ['Machine_1']
+#
 test_parser = DataParser()
-for event in list_of_events:
 
-    test_parser.parsing(event)
+# for event in list_of_events:
+#
+#     test_parser.parsing(event)
+# test_parser.hours_from_user('User_1')

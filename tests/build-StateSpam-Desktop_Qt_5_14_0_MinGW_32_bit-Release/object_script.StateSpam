@@ -1,0 +1,11 @@
+TcpClient.o
+TcpClientConnection.o
+TcpConnection.o
+main.o
+_mainwindow.o
+statespamer.o
+moc_TcpClient.o
+moc_TcpClientConnection.o
+moc_TcpConnection.o
+moc__mainwindow.o
+moc_statespamer.o

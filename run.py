@@ -7,6 +7,17 @@ import yaml
 import platform
 from PyQt5 import QtWidgets, uic, QtCore
 from PyQt5.QtWidgets import QApplication
+import psutil
+
+def check_isTimersinsystem() -> None:
+
+    for proc in psutil.process_iter():
+    name = proc.name()
+
+    if name == "Timers Journal.exe":
+        return True
+    else:
+        pass
 
 def initate_application() -> None:
 
@@ -17,8 +28,6 @@ def initate_application() -> None:
     #from model.table_window import TableModel
 
     from abs.templates.spreadsheet import SpreadsheetTemplate
-    from abs.templates.plotting.qtchart import PieChartConstructor
-    from utils.input_data_imit import generate_data_flow_generator
     from utils.win import set_current_process_explicit_attributes
     from abs.qt import MoveableWidget
 
@@ -33,9 +42,13 @@ def initate_application() -> None:
     logger = logging.getLogger(f"LASER.{__name__}")
     logger.warning('str')
 
-    main_widget = MainWindow()
-    main_widget.show()
-    app.exec_()
+    istimersexist = check_isTimersinsystem()
+
+    if not istimersexist:
+        main_widget = MainWindow()
+        main_widget.show()
+        app.exec_()
+
 
 
 def filelog_constructor(*args, **kw) -> logging.FileHandler:
