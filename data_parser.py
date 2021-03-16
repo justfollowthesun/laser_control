@@ -20,17 +20,16 @@ class DataParser():
         #self.list = self.data.data_to_pars()
         #self.data_signal = pyqtSignal(self.list)
         self.operations_d = defaultdict(list)
-        x = threading.Thread(target = self.ip_connect)
-        x.start()
-
-    def smth_func(self, data):
-        print(data)
+        self.msg_status = 1
+        # x = threading.Thread(target = self.ip_connect)
+        # x.start()
 
     def ip_connect(self):
 
         HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
         PORT = 12345       # Port to listen on (non-privileged ports are > 1023)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+
             s.bind((HOST, PORT))
             s.listen()
             conn, addr = s.accept()
@@ -52,14 +51,16 @@ class DataParser():
                                 message = codecs.decode(message, 'UTF-8')
                                 message = message[1 : -1]
                                 msg_to_list = message.split(',')
+                                print(msg_to_list)
                                 data = []
 
                                 for msg in msg_to_list:
-                                    msg = msg.split(':')
-                                    msg = msg[1][1:-1]
+                                    msg = msg.split(':"')
+                                    msg = msg[-1][0:-1]
                                     data.append(msg)
                                     msg_size == 0
-                    self.smth_func(data)
+                                    self.msg_status = 1
+                    print(data)
                     self.parsing(data)
                     if not data:
                         break
@@ -135,10 +136,11 @@ class DataParser():
         list_to_pars = data
 
         event_date = list_to_pars[0]
-        user = list_to_pars[1]
-        machine = list_to_pars[2]
-        event = list_to_pars[3]
-        status = list_to_pars[4]
+        print(event_date)
+        user = list_to_pars[4]
+        machine = list_to_pars[1]
+        event = list_to_pars[2]
+        status = list_to_pars[3]
 
         cursor.execute(f"""SELECT * FROM users WHERE user_name = ? """, (user,))
 
@@ -172,7 +174,18 @@ class DataParser():
         connection.commit()
         self.operations_d[event].append([event_date, status])
 
-        print(self.operations_d)
+    # def date_for_table(self):
+    #
+    #     connection = sqlite3.connect(DB_PATH)
+    #     cursor = connection.cursor()
+    #     cursor.execute("SELECT * FROM operations ")
+
+
+
+
+
+
+
 
     def data_from_filters(self, start_dtime, finish_dtime, users, equipment):
 
@@ -325,7 +338,6 @@ class DataParser():
         connection.commit()
         connection.close()
         total_hours = int(summ/3600)
-
 
 list_of_events = [
     ["2020-12-01 09:00:00", 'User_2', 'Machine_1', 'PROGRAM', 'START'],

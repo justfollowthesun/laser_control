@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, uic, QtChart, QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QAction, QMainWindow, QGraphicsScene, QLabel, QFrame, QGroupBox, QHBoxLayout, QGridLayout, QCalendarWidget, QTableWidget, QTableWidgetItem, QVBoxLayout,  QPushButton, QMenu
+from PyQt5.QtWidgets import  QComboBox, QApplication, QAction, QMainWindow, QGraphicsScene, QLabel, QFrame, QGroupBox, QHBoxLayout, QGridLayout, QCalendarWidget, QTableWidget, QTableWidgetItem, QVBoxLayout,  QPushButton, QMenu
 from PyQt5.QtCore import QSize, Qt, QTimer
 from PyQt5.QtChart import QChart
 from PyQt5.QtChart import QChart, QChartView, QPieSeries, QPieSlice, QBarCategoryAxis, QBarSet, QBarSeries
@@ -11,12 +11,16 @@ from config import UI_MAIN_WINDOW, UI_LOGIN_WINDOW, DESIGN_DIR
 from PyQt5.QtGui import QIcon
 from abs.qt import MoveableWidget
 import time
+import sys
 from datetime import datetime
 import threading
 from widgets.login_widget import LoginWindow
 from PyQt5 import QtCore
 import ctypes
 from ctypes import wintypes
+from data_parser import DataParser
+from widgets.combobox import CheckableComboBox
+
 
 Ui_MainWindow, _ = uic.loadUiType(UI_MAIN_WINDOW, import_from = DESIGN_DIR)
 
@@ -31,36 +35,53 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.setupUi(self)
 
         self.user = ('default', 'default', 'default', 1) #create default user array
-        #self.parser = DataParser() # connect to data parser
+        self.parser = DataParser() # connect to data parser
         #self.login_b.clicked.connect(self.open_login_widget)
         #self.stat_b.clicked.connect(self.set_up_table)
+        self.create_table()
+        self.add_to_table()
         self.users = self.parser.users()
         self.machines = self.parser.machines()
 
         self.users_box = CheckableComboBox(self) #create combobox to choice users
         self.users_box.addItems(self.users) # add users list from DataParser to combobox
         self.users_box.show()
-        self.users_lay.addWidget(self.users_box)
 
         self.machines_box =  CheckableComboBox(self) #create combobox to choice machines
         self.machines_box.addItems(self.machines) # add machines list from DataParser to combobox
         self.machines_box.show()
+
+        self.users_lay.addWidget(self.users_box)
         self.equipments_lay.addWidget(self.machines_box)
 
-        self.parser_timer = QTimer(self) # create timer to dynamycally update  operations table
-        self.parser_timer.setInterval(1000) # set time values to refresh timer (1000 equivalent to 1 sec)
-        #self.timer1.timeout.connect(self.refresh_table)
-        self.parser_timer.start()
-
         self.set_filters.clicked.connect(self.filter_data)
+
+        ip_connect_thread = threading.Thread(target = self.parser.ip_connect)
+        ip_connect_thread.start()
+        self.refresh_values()
+
+        # table_refresh_thread = QtCore.QThread()
+        # table_refresh_thread.started.connect(self.refresh_values)
+        # table_refresh_thread.start()
+
+        # table_append_thread = QtCore.QThread()
+        # table_append_thread.started.connect(self.add_to_table)
+        # table_append_thread.start()
+
         #self.timers_journal.clicked.connect(self.open_timers_table)
         #self.reset_filters.clicked.connect(self.reboot_timers)
         #self.tabWidget.stat.clicked.connect(set_up_table)
-        self.set_up_table() #create operations table
         print('all right')
         #self.graph_b.clicked.connect(self.set_up_barcharts)
         #self._createActions()
         #self._createMenuBar()
+
+    def refresh_values(self):
+
+        self.parser_timer = QTimer(self) # create timer to dynamycally update operations table
+        self.parser_timer.setInterval(1000) # set time values to refresh timer (1000 equivalent to 1 sec)
+        self.parser_timer.start()
+        self.parser_timer.timeout.connect(self.refresh_table)
 
     def set_up_filters(self) -> list:
 
@@ -119,12 +140,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         helpMenu.addAction(self.helpContentAction)
         helpMenu.addAction(self.aboutAction)
 
-    def set_up_table(self) -> None:
-
-        #self.clearLayout(self.gridLayout)
-        self.create_table() # create empty table in MainWindow
-        self.add_to_table() # append operations to created table
-
     def set_up_barcharts(self) -> None:
 
         filter_graphs_box = CheckableComboBox(self)
@@ -147,6 +162,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.tableWidget.setColumnWidth(1, 250)
         self.tableWidget.setColumnWidth(2, 250)
 
+    def create_diagram(self):
+
         self.diagram_series = QtChart.QPieSeries()# create series for diagram
         self.diagram_series.setLabelsPosition(QtChart.QPieSlice.LabelInsideHorizontal) #set horizontal label for diagram
 
@@ -160,21 +177,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
             slice.setLabel("<h3>{:.2f}%</h3>".format(100 * slice.percentage()))
         self.chart = QChart()
         #self.chart.legend().hide()
-
         self.chart.addSeries(self.series)
-
         header_font = QFont('Sergoe UI', 12)
         self.chart.legend().setFont(header_font)
-
         self.chart.setAnimationOptions(QChart.SeriesAnimations)
         self.title = "<span style='color: black; font-size: 18pt;'>Статистика по операциям</span>"
         self.chart.setTitle(self.title)
         self.chartview = QChartView(self.chart)
         self.chartview.setRenderHint(QPainter.Antialiasing)
-        #self.clearLayout(self.diagram_up)
-
-        #self.tableWidget.setRowCount(0)
-        #self.clearLayout(self.gridLayout)
+        self.clearLayout(self.diagram_up)
+        self.tableWidget.setRowCount(0)
+        self.clearLayout(self.gridLayout)
 
     def add_to_table(self) -> None:
 
@@ -182,9 +195,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         Add new data to operations table and operations diagram
 
         '''
-
-        dict =  {'PROGRAM': [['2020-12-01 09:00:00', 'START'], ['2020-12-01 10:30:00', 'FINISH']], 'TASK': [['2020-12-01 10:05:00', 'START'], ['2020-12-01 10:09:00', 'FINISH']], 'LASER': [['2020-12-01 10:05:00', 'START'], ['2020-12-01 10:07:00', 'FINISH']], 'GAS': [['2020-12-01 10:05:30', 'START'], ['2020-12-01 10:06:30', 'FINISH']], 'ERROR_1': [['2020-12-01 10:07:30', 'FINISH']]}
+        dict = self.parser.operations_d
         operations = list(dict.keys())
+        print(operations)
         date_now = datetime.now() # give current datetime from calling python build-in method .now()
 
         self.list = [] #list of operations wich is currently in the table
@@ -206,13 +219,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
                 self.list.append(operation) #append new operation in the operations list
                 self.series.append(operation, dtime_rel/self.summary_time) #
-        self.diagram_up.addWidget(self.chartview)
+        #self.diagram_up.addWidget(self.chartview)
 
     def refresh_table(self):
 
         dict = self.parser.operations_d
-        dict =  {'PROGRAM': [['2021-02-02 09:00:00', 'START'], ['2020-12-01 10:30:00', 'FINISH']], 'TASK': [['2020-12-01 10:05:00', 'START'], ['2020-12-01 10:09:00', 'FINISH']], 'LASER': [['2020-12-01 10:05:00', 'START'], ['2020-12-01 10:07:00', 'FINISH']], 'GAS': [['2020-12-01 10:05:30', 'START'], ['2020-12-01 10:06:30', 'FINISH']], 'ERROR_1': [['2020-12-01 10:07:30', 'FINISH']]}
-
+        print(dict.keys())
         date_now = datetime.now()
         rows = self.tableWidget.rowCount()
 
@@ -228,6 +240,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
                 self.tableWidget.setItem(row, 1, QTableWidgetItem(str(dtime_abs)))
                 self.summary_time = self.summary_time + dtime_rel
 
+        if self.parser.msg_status == 1:
+            self.add_to_table()
+            self.parser.msg_status = 0
 
     def filter_data(self):
 
@@ -393,7 +408,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
         self.user = self.login_widget.user
 
-
     def exp_to_xlsx():
 
         pass
@@ -408,9 +422,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
     def closeEvent(self, event) -> None:
         dump_data(self)
         self.close()
-
-
-
 
 def dump_data(main_window):
 
