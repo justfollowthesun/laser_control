@@ -11,7 +11,7 @@ from collections import defaultdict
 
 
 class DataParser():
-
+    #data_signal = pyqtSignal()
     def __init__(self):
 
         if not os.path.exists(DB_DIR):
@@ -20,9 +20,20 @@ class DataParser():
         #self.list = self.data.data_to_pars()
         #self.data_signal = pyqtSignal(self.list)
         self.operations_d = defaultdict(list)
-        self.msg_status = 1
-        # x = threading.Thread(target = self.ip_connect)
-        # x.start()
+        self.data_signal = 0
+        self.data = [None, None, None]
+
+    def parsing_message(self, message):
+
+        msg_to_pars = codecs.decode(message, 'UTF-8')
+        msg_to_pars = msg_to_pars[1 : -1]
+        msg_to_list = msg_to_pars.split(',')
+        data = []
+        for msg in msg_to_list:
+            msg = msg.split(':"')
+            msg = msg[-1][0:-1]
+            data.append(msg)
+        return data
 
     def ip_connect(self):
 
@@ -33,35 +44,30 @@ class DataParser():
             s.bind((HOST, PORT))
             s.listen()
             conn, addr = s.accept()
+            msg_size = 0
             with conn:
+                residual_message = ''
                 print('Connected by', addr)
                 while True:
                     request = conn.recv(1024)
-                    msg_size = 0
                     if msg_size == 0:
                         if len(request) < 2:
                             pass
                         else:
                             len_message = int.from_bytes(request[:2], 'big')
-
+                            print(len_message)
                             if len(request) < len_message:
                                 pass
                             else:
-                                message = request[2:]
-                                message = codecs.decode(message, 'UTF-8')
-                                message = message[1 : -1]
-                                msg_to_list = message.split(',')
-                                print(msg_to_list)
-                                data = []
+                                while len(request) >= len_message:
+                                    len_message = int.from_bytes(request[:2], 'big')
 
-                                for msg in msg_to_list:
-                                    msg = msg.split(':"')
-                                    msg = msg[-1][0:-1]
-                                    data.append(msg)
-                                    msg_size == 0
-                                    self.msg_status = 1
-                    print(data)
-                    self.parsing(data)
+                                    msg_to_pars = request[2:len_message+1]
+                                    data = self.parsing_message(msg_to_pars)
+                                    self.data_signal = 1
+                                    self.parsing(data)
+                                    msg_size = 0
+                                    request = request[len_message+2:]
                     if not data:
                         break
 
@@ -136,7 +142,6 @@ class DataParser():
         list_to_pars = data
 
         event_date = list_to_pars[0]
-        print(event_date)
         user = list_to_pars[4]
         machine = list_to_pars[1]
         event = list_to_pars[2]
@@ -173,19 +178,7 @@ class DataParser():
         cursor.execute(insert_line, (event_date, user_id, machine_id, event, status_id))
         connection.commit()
         self.operations_d[event].append([event_date, status])
-
-    # def date_for_table(self):
-    #
-    #     connection = sqlite3.connect(DB_PATH)
-    #     cursor = connection.cursor()
-    #     cursor.execute("SELECT * FROM operations ")
-
-
-
-
-
-
-
+        self.data = [event, event_date, status]
 
     def data_from_filters(self, start_dtime, finish_dtime, users, equipment):
 

@@ -56,8 +56,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
         self.set_filters.clicked.connect(self.filter_data)
 
-        ip_connect_thread = threading.Thread(target = self.parser.ip_connect)
+        ip_connect_thread = threading.Thread(target = self.give_data)
         ip_connect_thread.start()
+
+        add_data = threading.Thread(target = self.add_table)
+        add_data.start()
+
         self.refresh_values()
 
         # table_refresh_thread = QtCore.QThread()
@@ -75,6 +79,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         #self.graph_b.clicked.connect(self.set_up_barcharts)
         #self._createActions()
         #self._createMenuBar()
+
+    def give_data(self):
+
+        self.parser.ip_connect()
+
+    def add_table(self):
+        while True:
+             if self.parser.data_signal == 1:
+                 print(self.parser.data)
+                 self.parser.data_signal = 0
+
 
     def refresh_values(self):
 
@@ -197,11 +212,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         '''
         dict = self.parser.operations_d
         operations = list(dict.keys())
-        print(operations)
         date_now = datetime.now() # give current datetime from calling python build-in method .now()
 
         self.list = [] #list of operations wich is currently in the table
 
+        # print(self.parser.msg_status)
+        # self.parser.msg_status =  0
         for operation in operations: # iterate in operations list
 
             if operation not in self.list: # if operation not in list of operations - append new string in table with new operations
@@ -224,7 +240,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
     def refresh_table(self):
 
         dict = self.parser.operations_d
-        print(dict.keys())
         date_now = datetime.now()
         rows = self.tableWidget.rowCount()
 
@@ -240,9 +255,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
                 self.tableWidget.setItem(row, 1, QTableWidgetItem(str(dtime_abs)))
                 self.summary_time = self.summary_time + dtime_rel
 
-        if self.parser.msg_status == 1:
-            self.add_to_table()
-            self.parser.msg_status = 0
+        # if self.parser.msg_status == 1:
+        #     self.add_to_table()
+        #     self.parser.msg_status = 0
 
     def filter_data(self):
 
