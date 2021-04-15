@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets, uic, QtChart, QtCore, QtGui
 from PyQt5.QtWidgets import  QComboBox, QApplication, QAction, QMainWindow, QGraphicsScene, QLabel, QFrame, QGroupBox, QHBoxLayout, QGridLayout, QCalendarWidget, QTableWidget, QTableWidgetItem, QVBoxLayout,  QPushButton, QMenu
-from PyQt5.QtCore import QSize, Qt, QTimer
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QSize, Qt, QTimer, QObject, pyqtSignal, pyqtSlot, QThread
 from PyQt5.QtChart import QChart
 from PyQt5.QtChart import QChart, QChartView, QPieSeries, QPieSlice, QBarCategoryAxis, QBarSet, QBarSeries
 from PyQt5.Qt import Qt
@@ -12,6 +12,8 @@ from PyQt5.QtGui import QIcon
 from abs.qt import MoveableWidget
 import time
 import sys
+import socket
+import codecs
 from datetime import datetime
 import threading
 from widgets.login_widget import LoginWindow
@@ -20,7 +22,44 @@ import ctypes
 from ctypes import wintypes
 from data_parser import DataParser
 from widgets.combobox import CheckableComboBox
+from collections import defaultdict
 
+# Create the Slots that will receive signals
+
+
+class DataRecieve(QThread):
+
+    signal_Data = pyqtSignal(['QString'])
+
+    def __init__(self, parent=None):
+        QThread.__init__(self, parent)
+
+    def parsing_message(self, message):
+
+        msg_to_pars = codecs.decode(message, 'UTF-8')
+        msg_to_pars = msg_to_pars[1 : -1]
+        msg_to_list = msg_to_pars.split(',')
+        data = []
+        for msg in msg_to_list:
+            msg = msg.split(':"')
+            msg = msg[-1][0:-1]
+            data.append(msg)
+        return msg_to_pars
+
+    def run(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
+        PORT = 12345       # Port to listen on (non-privileged ports are > 1023)
+        s.bind((HOST, PORT))
+        s.listen()
+        conn, addr = s.accept()
+        while True:
+            with s:
+                request = conn.recv(1024)
+                len_message = int.from_bytes(request[:2], 'big')
+                msg_to_pars = request[2:len_message+1]
+                data = self.parsing_message(msg_to_pars)
+                self.signal_Data.emit(data)
 
 Ui_MainWindow, _ = uic.loadUiType(UI_MAIN_WINDOW, import_from = DESIGN_DIR)
 
@@ -39,7 +78,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         #self.login_b.clicked.connect(self.open_login_widget)
         #self.stat_b.clicked.connect(self.set_up_table)
         self.create_table()
-        self.add_to_table()
         self.users = self.parser.users()
         self.machines = self.parser.machines()
 
@@ -52,21 +90,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.machines_box.show()
 
         self.users_lay.addWidget(self.users_box)
-        self.equipments_lay.addWidget(self.machines_box)
-
         self.set_filters.clicked.connect(self.filter_data)
 
-        ip_connect_thread = threading.Thread(target = self.give_data)
-        ip_connect_thread.start()
+        self.operation_list = []
+        self.operations = defaultdict(list)
+        #self.refresh_values()
+        self.create_diagram()
 
-        add_data = threading.Thread(target = self.add_table)
-        add_data.start()
-
-        self.refresh_values()
-
-        # table_refresh_thread = QtCore.QThread()
-        # table_refresh_thread.started.connect(self.refresh_values)
-        # table_refresh_thread.start()
+        self.add_data_thread = DataRecieve()
+        self.add_data_thread.signal_Data.connect(self.on_Data)
+        self.add_data_thread.start()
 
         # table_append_thread = QtCore.QThread()
         # table_append_thread.started.connect(self.add_to_table)
@@ -75,24 +108,58 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         #self.timers_journal.clicked.connect(self.open_timers_table)
         #self.reset_filters.clicked.connect(self.reboot_timers)
         #self.tabWidget.stat.clicked.connect(set_up_table)
-        print('all right')
         #self.graph_b.clicked.connect(self.set_up_barcharts)
         #self._createActions()
         #self._createMenuBar()
 
-    def give_data(self):
+    @pyqtSlot(str)
+    def on_Data(self, message): #В теле функции обработка приходящих данных
+        data = []
+        msg_to_list = message.split(',')
+        for msg in msg_to_list:
+            msg = msg.split(':"')
+            msg = msg[-1][0:-1]
+            data.append(msg)
 
-        self.parser.ip_connect()
+        date_now = datetime.now()
+        event = data[2]
+        dtime_event = data[0]
+        status_event = data[3]
+        rowPos = self.timers_table.rowCount() #count position to insert new row
+        rowPos_err = self.timers_table.rowCount()
+        if event not in self.operations.keys() and event!= 'ERROR':
 
-    def add_table(self):
-        while True:
-             if self.parser.data_signal == 1:
-                 print(self.parser.data)
-                 self.parser.data_signal = 0
+            self.timers_table.insertRow(rowPos) # insert new row to the counted position
+            self.timers_table.setItem(rowPos, 0, QTableWidgetItem(event))
+            self.operations[event] = [status_event, dtime_event]
+
+            datetime_event = datetime.strptime(dtime_event, '%Y-%m-%d %H:%M:%S')
+            dtime_rel = (date_now - datetime_event).total_seconds() #count seconds for calculate relative operation time
+            dtime_abs = self.convert_sec_to_time(dtime_rel) #convert seconds to format hours:minutes:seconds (HH:MM:SS)
+            self.timers_table.setItem(rowPos, 1, QTableWidgetItem(dtime_event))
+            _slice = QPieSlice(event,dtime_rel, self.series)
+            # _slice.setBrush(QColor(*[random.randint(0, 255) for _ in range(3)]) )
+            _slice.setLabelVisible(True)
+            self.series.append(_slice)
+            for slice in self.series.slices():
+                slice.setLabel("{:.2f}%".format(100 * slice.percentage()))
+            self.series.setLabelsPosition(QPieSlice.LabelInsideNormal)
+            self.chart.legend().setVisible(True)
+            self.chart.legend().setAlignment(Qt.AlignBottom)
+            i = len(self.series)
+            self.chart.legend().markers(self.series)[i-1].setLabel(event)
+
+        elif event not in self.operations.keys():
+
+            rowPos_err = self.errors_table.rowCount()
+            self.errors_table.insertRow(rowPos_err) # insert new row to the counted position
+            self.errors_table.setItem(rowPos_err, 0, QTableWidgetItem(status_event))
+            datetime_event = datetime.strptime(dtime_event, '%Y-%m-%d %H:%M:%S')
+            self.errors_table.setItem(rowPos_err, 1, QTableWidgetItem(dtime_event))
 
 
+    @pyqtSlot(list)
     def refresh_values(self):
-
         self.parser_timer = QTimer(self) # create timer to dynamycally update operations table
         self.parser_timer.setInterval(1000) # set time values to refresh timer (1000 equivalent to 1 sec)
         self.parser_timer.start()
@@ -166,98 +233,211 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         Create empty table templatre with initial parameters
         Create diagram template
         '''
-        header_font = QFont('Sergoe UI', 12) #set up header font
-        header_font.setWeight(QFont.Bold) #set up header font weight
-        self.tableWidget.setColumnCount(3) # create table template
-        self.tableWidget.setHorizontalHeaderLabels([ "Относительное время","Абсолютное время", "Название операции"])
-        self.tableWidget.horizontalHeaderItem(0).setFont(header_font)
-        self.tableWidget.horizontalHeaderItem(1).setFont(header_font)
-        self.tableWidget.horizontalHeaderItem(2).setFont(header_font)
-        self.tableWidget.setColumnWidth(0, 250)
-        self.tableWidget.setColumnWidth(1, 250)
-        self.tableWidget.setColumnWidth(2, 250)
+        header_font = QFont('Sergoe UI', 11)
+        header_font.setWeight(QFont.Bold)
+        # create table template for append date from timers_database
+        self.timers_table =  QTableWidget(self)
+        self.timers_table.setColumnCount(3)
+        self.timers_table.setHorizontalHeaderLabels(["Название", "Абсолютное время", "Относительное время"])
+        header = self.timers_table.horizontalHeader()
+        self.timers_table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        self.timers_table.setSortingEnabled(True)
+        for i in range(self.timers_table.columnCount()):
+
+            header.setSectionResizeMode(i, QtWidgets.QHeaderView.Stretch)
+
+        self.timers_table.horizontalHeaderItem(0).setFont(header_font)
+        self.timers_table.horizontalHeaderItem(1).setFont(header_font)
+        self.timers_table.horizontalHeaderItem(2).setFont(header_font)
+        self.timers_table.resizeRowsToContents()
+        self.timers_table.resizeColumnsToContents()
+        self.stat_up_layout.addWidget(self.timers_table)
+
+        self.errors_table =  QTableWidget(self)
+        self.errors_table.setColumnCount(2)
+        self.errors_table.setHorizontalHeaderLabels(["Название ошибки", "Время возникновения"])
+        header = self.errors_table.horizontalHeader()
+        self.errors_table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        self.errors_table.setSortingEnabled(True)
+        for i in range(self.errors_table.columnCount()):
+
+            header.setSectionResizeMode(i, QtWidgets.QHeaderView.Stretch)
+
+        self.errors_table.horizontalHeaderItem(0).setFont(header_font)
+        self.errors_table.horizontalHeaderItem(1).setFont(header_font)
+        self.errors_table.resizeRowsToContents()
+        self.errors_table.resizeColumnsToContents()
+        self.gridLayout_4.addWidget(self.errors_table)
+
+    def create_donutchart(self):
+
+        series = QPieSeries()
+        series.setHoleSize(0.35)
+        series.append("Protein 4.2%", 4.2)
+        slice = QPieSlice()
+        slice = series.append("Fat 15.6%", 15.6)
+        slice.setExploded()
+        slice.setLabelVisible()
+        series.append("Other 23.8%", 23.8);
+        series.append("Carbs 56.4%", 56.4);
+        chart = QChart()
+        chart.legend().hide()
+        chart.addSeries(series)
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.setTitle("DonutChart Example")
+        chart.setTheme(QChart.ChartThemeBlueCerulean)
+        chartview = QChartView(chart)
+        chartview.setRenderHint(QPainter.Antialiasing)
+        self.setCentralWidget(chartview)
+
+    # def create_diagram(self):
+    #
+    #     #self.clearLayout(self.diagram_up)
+    #     self.series = QtChart.QPieSeries()# create series for diagram
+    #     self.series.setLabelsPosition(QtChart.QPieSlice.LabelInsideHorizontal) #set horizontal label for diagram
+    #
+    #     self.series = QPieSeries()
+    #     self.series.setHoleSize(0.35) # change relative size of central hole in diagram
+    #     self.series.setLabelsPosition(QPieSlice.LabelInsideHorizontal)
+    #     self.series.setLabelsVisible(True)
+    #     self.slice = QPieSlice()
+    #     self.slice.setExploded(True)
+    #     self.slice.setLabelVisible(True)
+    #
+    #     chart = QChart()
+    #     chart.legend().hide()
+    #     chart.addSeries(series)
+    #     chart.setAnimationOptions(QChart.SeriesAnimations)
+    #     chart.setTitle("DonutChart Example")
+    #     chart.setTheme(QChart.ChartThemeBlueCerulean)
+    #     chartview = QChartView(chart)
+    #     chartview.setRenderHint(QPainter.Antialiasing)
+    #     for slice in self.series.slices():
+    #         slice.setLabel("<h3>{:.2f}%</h3>".format(100 * slice.percentage()))
+    #     self.chart = QChart()
+    #     #self.chart.legend().hide()
+    #     self.chart.addSeries(self.series)
+    #     header_font = QFont('Sergoe UI', 12)
+    #     self.chart.legend().setFont(header_font)
+    #     self.chart.setAnimationOptions(QChart.SeriesAnimations)
+    #     self.title = "<span style='color: black; font-size: 18pt;'>Статистика по операциям</span>"
+    #     self.chart.setTitle(self.title)
+    #     self.chartview = QChartView(self.chart)
+    #     self.chartview.setRenderHint(QPainter.Antialiasing)
+    #     # self.clearLayout(self.diagram_up)
+    #     self.clearLayout(self.gridLayout)
+    #     self.diagram_up.addWidget(self.chartview)
 
     def create_diagram(self):
 
-        self.diagram_series = QtChart.QPieSeries()# create series for diagram
-        self.diagram_series.setLabelsPosition(QtChart.QPieSlice.LabelInsideHorizontal) #set horizontal label for diagram
-
         self.series = QPieSeries()
-        self.series.setHoleSize(0.35) # change relative size of central hole in diagram
-        self.series.setLabelsPosition(QPieSlice.LabelInsideHorizontal)
+        self.series.setHoleSize(0.35)
         self.slice = QPieSlice()
-        self.slice.setExploded(True)
-        self.slice.setLabelVisible(True)
+        self.slice.setExploded()
+        self.slice.setLabelVisible()
         for slice in self.series.slices():
             slice.setLabel("<h3>{:.2f}%</h3>".format(100 * slice.percentage()))
         self.chart = QChart()
-        #self.chart.legend().hide()
+        self.chart.legend().hide()
         self.chart.addSeries(self.series)
-        header_font = QFont('Sergoe UI', 12)
-        self.chart.legend().setFont(header_font)
         self.chart.setAnimationOptions(QChart.SeriesAnimations)
-        self.title = "<span style='color: black; font-size: 18pt;'>Статистика по операциям</span>"
-        self.chart.setTitle(self.title)
+        self.chart.setTitle("<span style='color: black; font-size: 18pt;'>Статистика по операциям</span>")
         self.chartview = QChartView(self.chart)
         self.chartview.setRenderHint(QPainter.Antialiasing)
-        self.clearLayout(self.diagram_up)
-        self.tableWidget.setRowCount(0)
-        self.clearLayout(self.gridLayout)
+        self.diagram_up.addWidget(self.chartview)
 
-    def add_to_table(self) -> None:
+    def refresh_table(self):
+        dict = self.parser.operations_d
+        print(dict)
+        rows = self.timers_table.rowCount()
+        date_now = datetime.now()
+        summary_time = 0
+        for row in range(0, rows):
+           operation_name = self.timers_table.item(row, 0).text()
+           if operation_name!='ERROR_1' :
+               if dict[operation_name][-1][-1]  == 'START\\n':
+                   datetime_event = datetime.strptime(dict[operation_name][0][0], '%Y-%m-%d %H:%M:%S')
+                   dtime_rel = (date_now - datetime_event).total_seconds()
+                   dtime_abs = self.convert_sec_to_time(dtime_rel)
+                   self.timers_table.setItem(row, 1, QTableWidgetItem(str(dtime_abs)))
+                   summary_time = summary_time + dtime_rel
+                   self.timers_table.setItem(row, 2, QTableWidgetItem(str(round(dtime_rel/summary_time*100,2))))
+               else:
+                   datetime_event = datetime.strptime(dict[operation_name][0][0], '%Y-%m-%d %H:%M:%S')
+                   dtime_rel = (date_now - datetime_event).total_seconds()
+                   summary_time = summary_time + dtime_rel
+                   self.timers_table.setItem(row, 2, QTableWidgetItem(str(round(dtime_rel/summary_time*100,2))))
+                   print(135)
+
+    def add_data(self):
+        self.series.append("Other 23.8%", 23.8)
+        self.series.append("Carbs 56.4%", 56.4)
+
+    @pyqtSlot(list)
+    def add_to_table(self, data) -> None:
 
         '''
         Add new data to operations table and operations diagram
-
         '''
         dict = self.parser.operations_d
-        operations = list(dict.keys())
-        date_now = datetime.now() # give current datetime from calling python build-in method .now()
-
-        self.list = [] #list of operations wich is currently in the table
-
-        # print(self.parser.msg_status)
-        # self.parser.msg_status =  0
-        for operation in operations: # iterate in operations list
-
-            if operation not in self.list: # if operation not in list of operations - append new string in table with new operations
-
-                rowPos = self.tableWidget.rowCount() #count position to insert new row
-                self.tableWidget.insertRow(rowPos) # insert new row to the counted position
-                datetime_event = datetime.strptime(dict[operation][-1][-2], '%Y-%m-%d %H:%M:%S')
-                dtime_rel = (date_now - datetime_event).total_seconds() #count seconds for calculate relative operation time
-                dtime_abs = self.convert_sec_to_time(dtime_rel) #convert seconds to format hours:minutes:seconds (HH:MM:SS)
-                self.summary_time = self.summary_time + dtime_rel # add relative time to total time of overall operations
-
-                self.tableWidget.setItem(rowPos, 1, QTableWidgetItem(dtime_abs)) #set new items in the table
-                self.tableWidget.setItem(rowPos, 0, QTableWidgetItem(str(dtime_rel/self.summary_time)))
-                self.tableWidget.setItem(rowPos, 2, QTableWidgetItem(operation))
-
-                self.list.append(operation) #append new operation in the operations list
-                self.series.append(operation, dtime_rel/self.summary_time) #
-        #self.diagram_up.addWidget(self.chartview)
-
-    def refresh_table(self):
-
-        dict = self.parser.operations_d
         date_now = datetime.now()
-        rows = self.tableWidget.rowCount()
+        event = data[0]
+        rowPos = self.timers_table.rowCount() #count position to insert new row
+        print(self.operation_list)
+        if data[0] not in self.operation_list and data[0]!= None:
+            self.operation_list.append(data[0])
+            self.timers_table.insertRow(rowPos) # insert new row to the counted position
+            self.timers_table.setItem(rowPos, 0, QTableWidgetItem(data[0]))
+            datetime_event = datetime.strptime(dict[event][-1][-2], '%Y-%m-%d %H:%M:%S')
+            dtime_rel = (date_now - datetime_event).total_seconds() #count seconds for calculate relative operation time
+            dtime_abs = self.convert_sec_to_time(dtime_rel) #convert seconds to format hours:minutes:seconds (HH:MM:SS)
+            self.timers_table.setItem(rowPos, 1, QTableWidgetItem(dtime_abs))
+            self.series.remove(self.series.slices()[0])
 
-        for row in range(rows):
+            _slice = QPieSlice(f'New data {self.num_data}', random.randint(5, 30), self.series)
+            _slice.setBrush(QColor(*[random.randint(0, 255) for _ in range(3)]) )
+            _slice.setLabelVisible(True)
+            self.series.append(_slice)
 
-            operation_name = self.tableWidget.item(row, 2).text()
-            if dict[operation_name][-1][-1]  == 'START':
+            for slice in self.series.slices():
+                slice.setLabel("{:.2f}%".format(100 * slice.percentage()))
+            self.series.setLabelsPosition(QPieSlice.LabelInsideNormal)
+            self.chart.legend().markers(self.series)[4].setLabel(f'New_data: {self.num_data}')
 
-                datetime_event = datetime.strptime(dict[operation_name][-1][-2], '%Y-%m-%d %H:%M:%S')
-                dtime_rel = (date_now - datetime_event).total_seconds()
-                dtime_abs = self.convert_sec_to_time(dtime_rel)
-                self.tableWidget.setItem(row, 0, QTableWidgetItem(str(dtime_rel/self.summary_time)))
-                self.tableWidget.setItem(row, 1, QTableWidgetItem(str(dtime_abs)))
-                self.summary_time = self.summary_time + dtime_rel
+            self.num_data += 1
 
-        # if self.parser.msg_status == 1:
-        #     self.add_to_table()
-        #     self.parser.msg_status = 0
+    def convert_sec_to_time(self, seconds) -> str:
+
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        return '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
+
+        # operations = list(dict.keys())
+        # date_now = datetime.now() # give current datetime from calling python build-in method .now()
+        #
+        # self.list = [] #list of operations wich is currently in the table
+        #
+        # # print(self.parser.msg_status)
+        # # self.parser.msg_status =  0
+        # for operation in operations: # iterate in operations list
+        #
+        #     if operation not in self.list: # if operation not in list of operations - append new string in table with new operations
+        #
+        #         rowPos = self.tableWidget.rowCount() #count position to insert new row
+        #         self.tableWidget.insertRow(rowPos) # insert new row to the counted position
+        #         datetime_event = datetime.strptime(dict[operation][-1][-2], '%Y-%m-%d %H:%M:%S')
+        #         dtime_rel = (date_now - datetime_event).total_seconds() #count seconds for calculate relative operation time
+        #         dtime_abs = self.convert_sec_to_time(dtime_rel) #convert seconds to format hours:minutes:seconds (HH:MM:SS)
+        #         self.summary_time = self.summary_time + dtime_rel # add relative time to total time of overall operations
+        #
+        #         self.tableWidget.setItem(rowPos, 1, QTableWidgetItem(dtime_abs)) #set new items in the table
+        #         self.tableWidget.setItem(rowPos, 0, QTableWidgetItem(str(dtime_rel/self.summary_time)))
+        #         self.tableWidget.setItem(rowPos, 2, QTableWidgetItem(operation))
+        #
+        #         self.list.append(operation) #append new operation in the operations list
+        #         self.series.append(operation, dtime_rel/self.summary_time) #
+        #self.diagram_up.addWidget(self.chartview)
 
     def filter_data(self):
 
@@ -287,137 +467,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
                 self.tableWidget.setItem(rowPos, 2, QTableWidgetItem(operation))
 
     def bar_charts_content(self) -> None:
-
-        self.set_filters.clicked.connect(self.graphs_content) # NEED TO RESTRUCTURE, CONNECT WITH BOTH TABLE AND DIAGRAM
-        clearLayout(self.machines_barcharts)
-        clearLayout(self.users_barcharts)
-        result = self.set_up_filters()
-
-        users = result[3]
-        machines = result[4]
-
-        BarSetsUsers = {}
-        BarSetsMachines = {}
-
-        for user in users:
-
-            BarSets[user] = QBarSet(user)
-            BarSets[user].append([])
-
-        for machine in machines:
-
-            BarSetsMachines[machine] = QBarSet(machine)
-            BarSetsMachines[machine].append([])
-        print(BarSetsUsers, BarSetsMachines)
-
-        for user in users:
-
-            hours = self.parser.hours_from_user(user)
-
-        # set0 = QBarSet('X0')
-		# set1 = QBarSet('X1')
-		# set2 = QBarSet('X2')
-		# set3 = QBarSet('X3')
-		# set4 = QBarSet('X4')
-        #
-		# set0.append([random.randint(0, 10) for i in range(6)])
-		# set1.append([random.randint(0, 10) for i in range(6)])
-		# set2.append([random.randint(0, 10) for i in range(6)])
-		# set3.append([random.randint(0, 10) for i in range(6)])
-		# set4.append([random.randint(0, 10) for i in range(6)])
-        #
-		# series = QBarSeries()
-		# series.append(set0)
-		# series.append(set1)
-		# series.append(set2)
-		# series.append(set3)
-		# series.append(set4)
-        #
-		# chart = QChart()
-		# chart.addSeries(series)
-		# chart.setTitle('Bar Chart Demo')
-		# chart.setAnimationOptions(QChart.SeriesAnimations)
-        #
-		# months = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun')
-        #
-		# axisX = QBarCategoryAxis()
-		# axisX.append(months)
-        #
-		# axisY = QValueAxis()
-		# axisY.setRange(0, 15)
-        #
-		# chart.addAxis(axisX, Qt.AlignBottom)
-		# chart.addAxis(axisY, Qt.AlignLeft)
-        #
-		# chart.legend().setVisible(True)
-		# chart.legend().setAlignment(Qt.AlignBottom)
-        #
-		# chartView = QChartView(chart)
-		# self.setCentralWidget(chartView)
-
-        # clearLayout(self.graphs_layout)
-        # conditions = self.set_up_filters()
-        # operations = ['1', '2', '3']
-        # result_data = self.parser.date_to_table(conditions[0], conditions[1], conditions[2], conditions[3])
-        # self.stackedWidget.setCurrentIndex(1)
-        #
-        # machines = conditions[3]
-        # users = conditions[2]
-        #
-        # for machine in machines:
-        #
-        #     lbl = QLabel()
-        #     lbl.setText(machine)
-        #     self.machines_layout.addWidget(lbl)
-        #
-        #     for user in users:
-        #
-        #         groupbox = QGroupBox()
-        #         lbl = QLabel()
-        #         lbl.setText(user)
-        #         self.users_layout.addWidget(lbl)
-        #         base_layout = QGridLayout()
-        #         self.graphs_layout.addLayout(base_layout)
-        #
-        #         _ = 0
-        #         for operation in operations:
-        #             _ =_ + 1
-        #             layout = QHBoxLayout()
-        #             frame1 = QFrame()
-        #             frame2 = QFrame()
-        #             layout.addWidget(frame1)
-        #             layout.addWidget(frame2)
-        #             base_layout.addLayout(layout, _ , 2)
-
-    def convert_sec_to_time(self, seconds) -> str:
-
-        hours, remainder = divmod(seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-
-        return '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
-
-    def clearLayout(self, layout):
-
-      while layout.count():
-
-        child = layout.takeAt(0)
-
-        if child.widget():
-
-          child.widget().deleteLater()
-
-    def open_login_widget(self):
-
-        self.login_widget = LoginWindow(self.users_db, self)
-        self.login_widget.show()
-        self.login_widget.submit_button.clicked.connect(self.click_check)
-
-    def open_timers_table(self):
-
-        self.timers_table = TimersWindow(self.timers_db)
-        self.timers_table.user = self.user
-        print(self.user)
-        self.timers_table.show()
+        pass
 
     def click_check(self):
 
@@ -437,6 +487,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
     def closeEvent(self, event) -> None:
         dump_data(self)
         self.close()
+
+    def clearLayout(self, layout):
+
+      while layout.count():
+
+        child = layout.takeAt(0)
+
+        if child.widget():
+
+          child.widget().deleteLater()
 
 def dump_data(main_window):
 

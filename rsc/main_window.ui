@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1600</width>
+    <width>1078</width>
     <height>882</height>
    </rect>
   </property>
@@ -21,8 +21,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1600</width>
-    <height>100</height>
+    <width>0</width>
+    <height>0</height>
    </size>
   </property>
   <property name="font">
@@ -49,6 +49,32 @@ border-color: rgb(255, 255, 255);</string>
 border: 3px solid rgb(247, 247, 247);</string>
    </property>
    <layout class="QGridLayout" name="gridLayout_3">
+    <item row="0" column="1">
+     <widget class="QDateTimeEdit" name="start_dtime">
+      <property name="font">
+       <font>
+        <family>Segoe UI</family>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="calendarPopup">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QDateTimeEdit" name="finish_dtime">
+      <property name="font">
+       <font>
+        <family>Segoe UI</family>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="calendarPopup">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="1" column="0">
      <widget class="QPushButton" name="login_b_5">
       <property name="minimumSize">
@@ -84,13 +110,6 @@ border: 3px solid rgb(247, 247, 247);</string>
        <string>Фильтр до</string>
       </property>
      </widget>
-    </item>
-    <item row="1" column="3">
-     <layout class="QVBoxLayout" name="equipments_lay">
-      <property name="sizeConstraint">
-       <enum>QLayout::SetMinimumSize</enum>
-      </property>
-     </layout>
     </item>
     <item row="0" column="0">
      <widget class="QPushButton" name="login_b_4">
@@ -128,234 +147,12 @@ border: 3px solid rgb(247, 247, 247);</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="4">
-     <widget class="QPushButton" name="reset_filters">
-      <property name="maximumSize">
-       <size>
-        <width>400</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="font">
-       <font>
-        <family>Segoe UI</family>
-        <pointsize>12</pointsize>
-       </font>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QPushButton {
-	background-color: white ;
-	border-radius:5px;
-	color: black;
-	border: 2px solid rgb(247, 247, 247);
-	border-color: green
-}
-
-QPushButton:hover {
-	border: 2px solid rgb(247, 247, 247);
-	border-color: orange;
-}
-
-QPushButton:pressed {
-	background-color: rgb(88, 88, 88);
-}
-</string>
-      </property>
-      <property name="text">
-       <string>Сброс фильтра</string>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="3">
      <layout class="QVBoxLayout" name="users_lay">
       <property name="sizeConstraint">
        <enum>QLayout::SetMinimumSize</enum>
       </property>
      </layout>
-    </item>
-    <item row="2" column="0" colspan="7">
-     <widget class="QTabWidget" name="tabWidget">
-      <property name="font">
-       <font>
-        <family>Segoe UI</family>
-        <pointsize>12</pointsize>
-       </font>
-      </property>
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="stat">
-       <attribute name="title">
-        <string>Статистика</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <widget class="QTableWidget" name="tableWidget">
-          <property name="minimumSize">
-           <size>
-            <width>500</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>900</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>12</pointsize>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true"> border-color: grey;
-</string>
-          </property>
-          <property name="lineWidth">
-           <number>0</number>
-          </property>
-          <property name="autoScrollMargin">
-           <number>20</number>
-          </property>
-          <property name="showGrid">
-           <bool>true</bool>
-          </property>
-          <property name="wordWrap">
-           <bool>true</bool>
-          </property>
-          <property name="cornerButtonEnabled">
-           <bool>false</bool>
-          </property>
-          <attribute name="horizontalHeaderDefaultSectionSize">
-           <number>237</number>
-          </attribute>
-          <attribute name="horizontalHeaderMinimumSectionSize">
-           <number>37</number>
-          </attribute>
-          <attribute name="verticalHeaderVisible">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="verticalHeaderHighlightSections">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="verticalHeaderStretchLastSection">
-           <bool>false</bool>
-          </attribute>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QTableWidget" name="tableWidget_2">
-          <property name="minimumSize">
-           <size>
-            <width>500</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>900</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true"> border-color: grey;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <layout class="QGridLayout" name="diagram_bot">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-         </layout>
-        </item>
-        <item row="0" column="1">
-         <layout class="QGridLayout" name="diagram_up">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="diagrams">
-       <attribute name="title">
-        <string>Диаграммы событий</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_8">
-        <item row="1" column="0">
-         <layout class="QGridLayout" name="users_barcharts">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-         </layout>
-        </item>
-        <item row="0" column="0">
-         <layout class="QGridLayout" name="machines_barcharts">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="timers">
-       <attribute name="title">
-        <string>Журнал таймеров</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_5"/>
-      </widget>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QDateTimeEdit" name="finish_dtime">
-      <property name="font">
-       <font>
-        <family>Segoe UI</family>
-        <pointsize>12</pointsize>
-       </font>
-      </property>
-      <property name="calendarPopup">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="2">
-     <widget class="QPushButton" name="login_b_7">
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>35</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>35</height>
-       </size>
-      </property>
-      <property name="font">
-       <font>
-        <family>Segoe UI</family>
-        <pointsize>12</pointsize>
-       </font>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QPushButton {
-	background-color: white ;
-	border-radius:5px;
-	color: black;
-	border: 2px solid rgb(247, 247, 247);
-	border-color: white
-}
-
-</string>
-      </property>
-      <property name="text">
-       <string>Оборудование</string>
-      </property>
-     </widget>
     </item>
     <item row="0" column="2">
      <widget class="QPushButton" name="login_b_6">
@@ -393,20 +190,60 @@ QPushButton:pressed {
       </property>
      </widget>
     </item>
-    <item row="0" column="1">
-     <widget class="QDateTimeEdit" name="start_dtime">
+    <item row="2" column="0" colspan="7">
+     <widget class="QTabWidget" name="tabWidget">
       <property name="font">
        <font>
         <family>Segoe UI</family>
         <pointsize>12</pointsize>
        </font>
       </property>
-      <property name="calendarPopup">
-       <bool>true</bool>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="stat">
+       <attribute name="title">
+        <string>Статистика</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="stat_up_layout"/>
+        </item>
+        <item row="1" column="0">
+         <layout class="QGridLayout" name="gridLayout_4"/>
+        </item>
+        <item row="0" column="1" rowspan="2">
+         <layout class="QGridLayout" name="diagram_up">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item row="1" column="5">
+     <widget class="QLabel" name="label">
+      <property name="font">
+       <font>
+        <family>Segoe UI</family>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Пользователь в системе:</string>
       </property>
      </widget>
     </item>
-    <item row="0" column="4">
+    <item row="1" column="6">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="2">
      <widget class="QPushButton" name="set_filters">
       <property name="maximumSize">
        <size>
@@ -444,7 +281,45 @@ QPushButton:pressed {
       </property>
      </widget>
     </item>
-    <item row="0" column="5">
+    <item row="1" column="3">
+     <widget class="QPushButton" name="reset_filters">
+      <property name="maximumSize">
+       <size>
+        <width>400</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>Segoe UI</family>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QPushButton {
+	background-color: white ;
+	border-radius:5px;
+	color: black;
+	border: 2px solid rgb(247, 247, 247);
+	border-color: green
+}
+
+QPushButton:hover {
+	border: 2px solid rgb(247, 247, 247);
+	border-color: orange;
+}
+
+QPushButton:pressed {
+	background-color: rgb(88, 88, 88);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>Сброс фильтра</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="5" colspan="2">
      <widget class="QPushButton" name="timers_journal_3">
       <property name="font">
        <font>
@@ -484,7 +359,7 @@ QPushButton:pressed {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1600</width>
+     <width>1078</width>
      <height>26</height>
     </rect>
    </property>
