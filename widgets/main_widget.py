@@ -95,6 +95,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
         self.operation_list = []
         self.operations = defaultdict(list)
+        self.operations_times = defaultdict(list)
         self.refresh_values()
         self.create_diagram()
         self.create_diagram_2()
@@ -102,6 +103,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.add_data_thread = DataRecieve()
         self.add_data_thread.signal_Data.connect(self.on_Data)
         self.add_data_thread.start()
+
+        self.refresh_diagram_thread = threading.Thread(target = self.refresh_diagram)
+        self.refresh_diagram_thread.start()
+
+
         self.reset_filters.clicked.connect(self.reset)
 
         self.table_exp.clicked.connect(self.fileSave)
@@ -123,18 +129,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         user = data[4]
         #Parsing data and put data to database
         self.parser.parsing([dtime_event, event, status_event, user])
-        print('########')
         if user not in self.users:
             self.users_box.addItems(self.user)
 
         rowPos = self.timers_table.rowCount() #count position to insert new row
         rowPos_err = self.timers_table.rowCount()
-        self.operations[event] = [status_event, dtime_event]
+
+        if event not in self.operations.keys():
+            self.operations[event] = [status_event, dtime_event, 0]
+        else:
+            self.operations[event][0] = status_event
+            self.operations[event][1] = dtime_event
 
         if event not in self.operations_list and event!= 'ERROR':
 
             self.operations_list.append(event)
-
             self.timers_table.insertRow(rowPos) # insert new row to the counted position
             self.timers_table.setItem(rowPos, 0, QTableWidgetItem(event))
             datetime_event = datetime.strptime(dtime_event, '%Y-%m-%d %H:%M:%S.%f')
@@ -168,11 +177,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.parser_timer.start()
         self.parser_timer.timeout.connect(self.refresh_table)
 
-
-    @pyqtSlot(list)
-    def refresh_diagram(self):
         self.diagram_timer = QTimer(self) # create timer to dynamycally update operations table
-        self.diagram_timer.setInterval(10000) # set time values to refresh timer (1000 equivalent to 1 sec)
+        self.diagram_timer.setInterval(5000) # set time values to refresh timer (1000 equivalent to 1 sec)
         self.diagram_timer.start()
         self.diagram_timer.timeout.connect(self.refresh_diagram)
 
@@ -251,21 +257,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.timers_table.resizeColumnsToContents()
 
         self.stat_up_layout.addWidget(self.timers_table)
-        self.errors_table =  QTableWidget(self)
-        self.errors_table.setColumnCount(2)
-        self.errors_table.setHorizontalHeaderLabels(["Название ошибки", "Время возникновения"])
-        header = self.errors_table.horizontalHeader()
-        self.errors_table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
-        self.errors_table.setSortingEnabled(True)
-        for i in range(self.errors_table.columnCount()):
-
-            header.setSectionResizeMode(i, QtWidgets.QHeaderView.Stretch)
-
-        self.errors_table.horizontalHeaderItem(0).setFont(header_font)
-        self.errors_table.horizontalHeaderItem(1).setFont(header_font)
-        self.errors_table.resizeRowsToContents()
-        self.errors_table.resizeColumnsToContents()
-        self.gridLayout_4.addWidget(self.errors_table)
+        # self.errors_table =  QTableWidget(self)
+        # self.errors_table.setColumnCount(2)
+        # self.errors_table.setHorizontalHeaderLabels(["Название ошибки", "Время возникновения"])
+        # header = self.errors_table.horizontalHeader()
+        # self.errors_table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        # self.errors_table.setSortingEnabled(True)
+        # for i in range(self.errors_table.columnCount()):
+        #
+        #     header.setSectionResizeMode(i, QtWidgets.QHeaderView.Stretch)
+        #
+        # self.errors_table.horizontalHeaderItem(0).setFont(header_font)
+        # self.errors_table.horizontalHeaderItem(1).setFont(header_font)
+        # self.errors_table.resizeRowsToContents()
+        # self.errors_table.resizeColumnsToContents()
+        # self.gridLayout_4.addWidget(self.errors_table)
 
     def create_table_2(self):
         header_font = QFont('Sergoe UI', 11)
@@ -288,21 +294,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.timers_table_2.resizeColumnsToContents()
         self.stat_up_layout_2.addWidget(self.timers_table_2)
 
-        self.errors_table_2 =  QTableWidget(self)
-        self.errors_table_2.setColumnCount(2)
-        self.errors_table_2.setHorizontalHeaderLabels(["Название ошибки", "Время возникновения"])
-        header = self.errors_table_2.horizontalHeader()
-        self.errors_table_2.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
-        self.errors_table_2.setSortingEnabled(True)
-        for i in range(self.errors_table_2.columnCount()):
-
-            header.setSectionResizeMode(i, QtWidgets.QHeaderView.Stretch)
-
-        self.errors_table_2.horizontalHeaderItem(0).setFont(header_font)
-        self.errors_table_2.horizontalHeaderItem(1).setFont(header_font)
-        self.errors_table_2.resizeRowsToContents()
-        self.errors_table_2.resizeColumnsToContents()
-        self.gridLayout_5.addWidget(self.errors_table_2)
+        # self.errors_table_2 =  QTableWidget(self)
+        # self.errors_table_2.setColumnCount(2)
+        # self.errors_table_2.setHorizontalHeaderLabels(["Название ошибки", "Время возникновения"])
+        # header = self.errors_table_2.horizontalHeader()
+        # self.errors_table_2.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        # self.errors_table_2.setSortingEnabled(True)
+        # for i in range(self.errors_table_2.columnCount()):
+        #
+        #     header.setSectionResizeMode(i, QtWidgets.QHeaderView.Stretch)
+        #
+        # self.errors_table_2.horizontalHeaderItem(0).setFont(header_font)
+        # self.errors_table_2.horizontalHeaderItem(1).setFont(header_font)
+        # self.errors_table_2.resizeRowsToContents()
+        # self.errors_table_2.resizeColumnsToContents()
+        # self.gridLayout_5.addWidget(self.errors_table_2)
 
     def create_diagram(self):
         self.clearLayout(self.diagram_up)
@@ -343,53 +349,99 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
     def reset(self):
 
         self.clearLayout(self.stat_up_layout_2)
-        self.clearLayout(self.gridLayout_5)
         self.create_table_2()
         self.create_diagram_2()
 
     def refresh_table(self):
 
-        dict = self.operations
+        print(self.operations)
+
         rows = self.timers_table.rowCount()
         date_now = datetime.now()
-        summary_time = 0
-
+        self.summary_time = 0
         for row in range(0, rows):
-
            operation_name = self.timers_table.item(row, 0).text()
-           status = dict[operation_name][0]
-           print(dict[operation_name])
-           dtime = dict[operation_name][1]
+           status = self.operations[operation_name][0]
+           dtime = self.operations[operation_name][1]
+           total_time = self.operations_times[operation_name]
 
            if status == 'START':
-
                datetime_event = datetime.strptime(dtime, '%Y-%m-%d %H:%M:%S.%f')
-               dtime_rel = (date_now - datetime_event).total_seconds()
+               #dtime_rel = (date_now - datetime_event).total_seconds()
+               dtime_rel = self.operations[operation_name][2]
+               dtime_abs = self.convert_sec_to_time(dtime_rel)
+               self.operations_times[operation_name] = dtime_rel
+               self.operations[operation_name][2] =  self.operations[operation_name][2] + 1
+               # overall_dtime = self.operations_times[operation_name]
+               # overall_dtime = overall_dtime + self.operations[operation_name][2]
+               # print(overall_dtime)
+               #self.operations_times[operation_name] = overall_dtime
                dtime_abs = self.convert_sec_to_time(dtime_rel)
                self.timers_table.setItem(row, 1, QTableWidgetItem(str(dtime_abs)))
 
+           elif status == 'FINISH':
+               self.operations_times[operation_name] = 0
+
+           # self.operations[operation_name][2] = self.operations[operation_name][2] + (self.operations[operation_name][2] - self.operations_times[operation_name])
+           print('*********')
+           print(self.operations[operation_name][2])
+
+
+        # for row in range(0, rows):
+        #     operation_name = self.timers_table.item(row, 0).text()
+        #     status = dict[operation_name][0]
+        #     dtime = dict[operation_name][1]
+        #     total_time = dict[operation_name][2]
+        #
+        #     datetime_event = datetime.strptime(dtime, '%Y-%m-%d %H:%M:%S.%f')
+        #     dtime_rel = (date_now - datetime_event).total_seconds()
+        #     dtime_abs = self.convert_sec_to_time(total_time)
+        #     self.summary_time = self.summary_time + total_time
+
+        for event in self.operations.keys():
+            self.summary_time = self.summary_time + self.operations_times[event]
+
         for row in range(0, rows):
-
             operation_name = self.timers_table.item(row, 0).text()
-            status = dict[operation_name][0]
-            dtime = dict[operation_name][1]
+            status = self.operations[operation_name][0]
+            dtime = self.operations[operation_name][1]
             datetime_event = datetime.strptime(dtime, '%Y-%m-%d %H:%M:%S.%f')
-            dtime_rel = (date_now - datetime_event).total_seconds()
-            dtime_abs = self.convert_sec_to_time(dtime_rel)
-            summary_time = summary_time + dtime_rel
+            dtime_rel = self.operations_times[operation_name]
 
-        for row in range(0, rows):
-            operation_name = self.timers_table.item(row, 0).text()
-            status = dict[operation_name][0]
-            dtime = dict[operation_name][1]
-            datetime_event = datetime.strptime(dtime, '%Y-%m-%d %H:%M:%S.%f')
-            dtime_rel = (date_now - datetime_event).total_seconds()
-
-            if summary_time!=0:
-                rel_value = dtime_rel/summary_time * 100
-                rel_value_tbl = str(round(dtime_rel/summary_time,2))
+            if self.summary_time!=0:
+                rel_value = dtime_rel/self.summary_time * 100
+                rel_value_tbl = str(round(dtime_rel/self.summary_time, 2))
                 self.timers_table.setItem(row, 2, QTableWidgetItem(str(rel_value_tbl)))
 
+                # self.series_.remove(self.series_.slices()[0])
+                # _slice = QPieSlice(operation_name , dtime_rel, self.series)
+                # # _slice.setBrush(QColor(*[random.randint(0, 255) for _ in range(3)]) )
+                # _slice.setLabelVisible(True)
+                # self.series_.append(_slice)
+                # for slice in self.series.slices():
+                #     slice.setLabel("{:.2f}%".format(100 * slice.percentage()))
+                # self.series_.setLabelsPosition(QPieSlice.LabelInsideNormal)
+                # self.chart_.legend().setVisible(True)
+                # self.chart_.legend().setAlignment(Qt.AlignBottom)
+                # i = len(self.series_)
+                # self.chart_.legend().markers(self.series_)[i-1].setLabel(operation_name)
+
+    def refresh_diagram(self):
+
+        dict = self.operations
+        rows = self.timers_table.rowCount()
+        date_now = datetime.now()
+
+        for row in range(0, rows):
+            operation_name = self.timers_table.item(row, 0).text()
+            status = dict[operation_name][0]
+            dtime = dict[operation_name][1]
+            datetime_event = datetime.strptime(dtime, '%Y-%m-%d %H:%M:%S.%f')
+            dtime_rel = (date_now - datetime_event).total_seconds()
+
+            if self.summary_time!=0:
+                rel_value = dtime_rel/self.summary_time * 100
+                rel_value_tbl = str(round(dtime_rel/self.summary_time,2))
                 self.series_.remove(self.series_.slices()[0])
                 _slice = QPieSlice(operation_name , dtime_rel, self.series)
                 # _slice.setBrush(QColor(*[random.randint(0, 255) for _ in range(3)]) )
@@ -401,7 +453,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
                 self.chart_.legend().setVisible(True)
                 self.chart_.legend().setAlignment(Qt.AlignBottom)
                 i = len(self.series_)
-                self.chart_.legend().markers(self.series_)[i-1].setLabel(event)
+                self.chart_.legend().markers(self.series_)[i-1].setLabel(operation_name)
+        print('1234')
 
     def convert_sec_to_time(self, seconds) -> str:
 

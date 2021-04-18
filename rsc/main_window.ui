@@ -49,7 +49,29 @@ border-color: rgb(255, 255, 255);</string>
 border: 3px solid rgb(247, 247, 247);</string>
    </property>
    <layout class="QGridLayout" name="gridLayout_3">
-    <item row="0" column="0">
+    <item row="0" column="2">
+     <widget class="QLabel" name="label">
+      <property name="maximumSize">
+       <size>
+        <width>250</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>Segoe UI</family>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">border-color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0" colspan="3">
      <widget class="QTabWidget" name="tabWidget">
       <property name="font">
        <font>
@@ -61,27 +83,52 @@ border: 3px solid rgb(247, 247, 247);</string>
        <string notr="true">background-color: rgb(255, 255, 255);</string>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="stat">
        <attribute name="title">
         <string>Текущая статистика</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0" rowspan="2">
-         <layout class="QGridLayout" name="stat_up_layout"/>
-        </item>
-        <item row="0" column="2" rowspan="4">
-         <layout class="QGridLayout" name="diagram_up">
-          <property name="spacing">
-           <number>0</number>
+        <item row="3" column="0">
+         <widget class="QPushButton" name="table_exp">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
           </property>
-         </layout>
+          <property name="font">
+           <font>
+            <family>Segoe UI</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+	background-color: white ;
+	border-radius:5px;
+	color: black;
+	border: 2px solid rgb(247, 247, 247);
+	border-color: grey
+}
+
+QPushButton:hover {
+	border: 2px solid rgb(247, 247, 247);
+	border-color: orange;
+}
+
+QPushButton:pressed {
+	background-color: rgb(88, 88, 88);
+}
+</string>
+          </property>
+          <property name="text">
+           <string>Экспорт таблицы</string>
+          </property>
+         </widget>
         </item>
-        <item row="2" column="0" rowspan="2">
-         <layout class="QGridLayout" name="gridLayout_4"/>
-        </item>
-        <item row="4" column="2">
+        <item row="3" column="2">
          <widget class="QPushButton" name="giag_exp">
           <property name="minimumSize">
            <size>
@@ -119,43 +166,15 @@ QPushButton:pressed {
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
-         <widget class="QPushButton" name="table_exp">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>30</height>
-           </size>
+        <item row="0" column="2" rowspan="3">
+         <layout class="QGridLayout" name="diagram_up">
+          <property name="spacing">
+           <number>0</number>
           </property>
-          <property name="font">
-           <font>
-            <family>Segoe UI</family>
-            <pointsize>12</pointsize>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-	background-color: white ;
-	border-radius:5px;
-	color: black;
-	border: 2px solid rgb(247, 247, 247);
-	border-color: grey
-}
-
-QPushButton:hover {
-	border: 2px solid rgb(247, 247, 247);
-	border-color: orange;
-}
-
-QPushButton:pressed {
-	background-color: rgb(88, 88, 88);
-}
-</string>
-          </property>
-          <property name="text">
-           <string>Экспорт таблиц</string>
-          </property>
-         </widget>
+         </layout>
+        </item>
+        <item row="0" column="0" rowspan="3">
+         <layout class="QGridLayout" name="stat_up_layout"/>
         </item>
        </layout>
       </widget>
@@ -323,9 +342,6 @@ QPushButton:pressed {
           </property>
          </widget>
         </item>
-        <item row="3" column="0" colspan="3">
-         <layout class="QGridLayout" name="stat_up_layout_2"/>
-        </item>
         <item row="1" column="1">
          <widget class="QDateTimeEdit" name="finish_dtime">
           <property name="font">
@@ -338,9 +354,6 @@ QPushButton:pressed {
            <bool>true</bool>
           </property>
          </widget>
-        </item>
-        <item row="4" column="0" rowspan="2" colspan="3">
-         <layout class="QGridLayout" name="gridLayout_5"/>
         </item>
         <item row="1" column="3">
          <widget class="QPushButton" name="reset_filters">
@@ -387,52 +400,14 @@ QPushButton:pressed {
           </property>
          </layout>
         </item>
-        <item row="3" column="3" rowspan="3" colspan="2">
+        <item row="3" column="3" rowspan="2" colspan="2">
          <layout class="QGridLayout" name="diagram_up_2">
           <property name="spacing">
            <number>0</number>
           </property>
          </layout>
         </item>
-        <item row="6" column="0" colspan="3">
-         <widget class="QPushButton" name="pushButton">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <family>Segoe UI</family>
-            <pointsize>12</pointsize>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QPushButton {
-	background-color: white ;
-	border-radius:5px;
-	color: black;
-	border: 2px solid rgb(247, 247, 247);
-	border-color: grey
-}
-
-QPushButton:hover {
-	border: 2px solid rgb(247, 247, 247);
-	border-color: orange;
-}
-
-QPushButton:pressed {
-	background-color: rgb(88, 88, 88);
-}
-</string>
-          </property>
-          <property name="text">
-           <string>Экспорт таблиц</string>
-          </property>
-         </widget>
-        </item>
-        <item row="6" column="3" colspan="2">
+        <item row="5" column="3" colspan="2">
          <widget class="QPushButton" name="pushButton_2">
           <property name="minimumSize">
            <size>
@@ -470,8 +445,77 @@ QPushButton:pressed {
           </property>
          </widget>
         </item>
+        <item row="5" column="0" colspan="3">
+         <widget class="QPushButton" name="pushButton">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Segoe UI</family>
+            <pointsize>12</pointsize>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+	background-color: white ;
+	border-radius:5px;
+	color: black;
+	border: 2px solid rgb(247, 247, 247);
+	border-color: grey
+}
+
+QPushButton:hover {
+	border: 2px solid rgb(247, 247, 247);
+	border-color: orange;
+}
+
+QPushButton:pressed {
+	background-color: rgb(88, 88, 88);
+}
+</string>
+          </property>
+          <property name="text">
+           <string>Экспорт таблицы</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0" rowspan="2" colspan="3">
+         <layout class="QGridLayout" name="stat_up_layout_2"/>
+        </item>
        </layout>
       </widget>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLabel" name="label_2">
+      <property name="minimumSize">
+       <size>
+        <width>200</width>
+        <height>30</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>250</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>Segoe UI</family>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">border-color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>Оператор Laser CNC:</string>
+      </property>
      </widget>
     </item>
    </layout>
