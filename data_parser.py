@@ -31,7 +31,6 @@ class DataParser():
         data = []
         for msg in msg_to_list:
             msg = msg.split(':"')
-            msg = msg[-1][0:-1]
             data.append(msg)
         return data
 

@@ -12,6 +12,7 @@ from PyQt5.QtGui import QIcon
 from abs.qt import MoveableWidget
 from xlsxwriter.workbook import Workbook
 import time
+import xlwt
 import sys
 import xlrd
 import pickle
@@ -38,12 +39,11 @@ class DataRecieve(QThread):
     def parsing_message(self, message):
 
         msg_to_pars = codecs.decode(message, 'UTF-8')
-        msg_to_pars = msg_to_pars[1 : -1]
+        msg_to_pars = msg_to_pars[1 : ]
         msg_to_list = msg_to_pars.split(',')
         data = []
         for msg in msg_to_list:
             msg = msg.split(':"')
-            msg = msg[-1][0:-1]
             data.append(msg)
         return msg_to_pars
 
@@ -61,8 +61,7 @@ class DataRecieve(QThread):
                 len_message = int.from_bytes(request[:2], 'big')
                 msg_to_pars = request[2:len_message+1]
                 data = self.parsing_message(msg_to_pars)
-                print('_________-')
-                print('data is')
+
                 self.signal_Data.emit(data)
 
 Ui_MainWindow, _ = uic.loadUiType(UI_MAIN_WINDOW, import_from = DESIGN_DIR)
@@ -77,11 +76,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
 
-        self.user = ('default', 'default', 'default', '1') #create default user array
         self.operations_list = []
         self.parser = DataParser() # connect to data parser
         #self.login_b.clicked.connect(self.open_login_widget)
         #self.stat_b.clicked.connect(self.set_up_table)
+        self.user = 'default'
         self.create_table()
         self.create_table_2()
         self.users = self.parser.users()
@@ -110,9 +109,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
         self.reset_filters.clicked.connect(self.reset)
 
-        self.table_exp.clicked.connect(self.fileSave)
+        self.table_exp.clicked.connect(self.file_Save_main)
         self.giag_exp.clicked.connect(self.diagram_save)
 
+
+        self.table_exp_2.clicked.connect(self.file_Save_stat)
+        self.diag_exp_2.clicked.connect(self.diagram_save)
 
     @pyqtSlot(str)
     def on_Data(self, message): #В теле функции обработка приходящих данных
@@ -126,7 +128,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         event = data[2]
         dtime_event = data[0]
         status_event = data[3]
+        self.user = data[4]
         user = data[4]
+        self.label.setText(self.user)
         #Parsing data and put data to database
         self.parser.parsing([dtime_event, event, status_event, user])
         if user not in self.users:
@@ -154,8 +158,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
             # _slice.setBrush(QColor(*[random.randint(0, 255) for _ in range(3)]) )
             _slice.setLabelVisible(True)
             self.series_.append(_slice)
-            for slice in self.series.slices():
-                slice.setLabel("{:.2f}%".format(100 * slice.percentage()))
+            for pslice in self.series_.slices():
+                pslice.setLabel("{:.2f}%".format(100 * pslice.percentage()))
             self.series_.setLabelsPosition(QPieSlice.LabelInsideNormal)
             self.chart_.legend().setVisible(True)
             self.chart_.legend().setAlignment(Qt.AlignBottom)
@@ -257,21 +261,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.timers_table.resizeColumnsToContents()
 
         self.stat_up_layout.addWidget(self.timers_table)
-        # self.errors_table =  QTableWidget(self)
-        # self.errors_table.setColumnCount(2)
-        # self.errors_table.setHorizontalHeaderLabels(["Название ошибки", "Время возникновения"])
-        # header = self.errors_table.horizontalHeader()
-        # self.errors_table.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
-        # self.errors_table.setSortingEnabled(True)
-        # for i in range(self.errors_table.columnCount()):
-        #
-        #     header.setSectionResizeMode(i, QtWidgets.QHeaderView.Stretch)
-        #
-        # self.errors_table.horizontalHeaderItem(0).setFont(header_font)
-        # self.errors_table.horizontalHeaderItem(1).setFont(header_font)
-        # self.errors_table.resizeRowsToContents()
-        # self.errors_table.resizeColumnsToContents()
-        # self.gridLayout_4.addWidget(self.errors_table)
 
     def create_table_2(self):
         header_font = QFont('Sergoe UI', 11)
@@ -293,22 +282,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.timers_table_2.resizeRowsToContents()
         self.timers_table_2.resizeColumnsToContents()
         self.stat_up_layout_2.addWidget(self.timers_table_2)
-
-        # self.errors_table_2 =  QTableWidget(self)
-        # self.errors_table_2.setColumnCount(2)
-        # self.errors_table_2.setHorizontalHeaderLabels(["Название ошибки", "Время возникновения"])
-        # header = self.errors_table_2.horizontalHeader()
-        # self.errors_table_2.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
-        # self.errors_table_2.setSortingEnabled(True)
-        # for i in range(self.errors_table_2.columnCount()):
-        #
-        #     header.setSectionResizeMode(i, QtWidgets.QHeaderView.Stretch)
-        #
-        # self.errors_table_2.horizontalHeaderItem(0).setFont(header_font)
-        # self.errors_table_2.horizontalHeaderItem(1).setFont(header_font)
-        # self.errors_table_2.resizeRowsToContents()
-        # self.errors_table_2.resizeColumnsToContents()
-        # self.gridLayout_5.addWidget(self.errors_table_2)
 
     def create_diagram(self):
         self.clearLayout(self.diagram_up)
@@ -383,9 +356,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
                self.operations_times[operation_name] = 0
 
            # self.operations[operation_name][2] = self.operations[operation_name][2] + (self.operations[operation_name][2] - self.operations_times[operation_name])
-           print('*********')
-           print(self.operations[operation_name][2])
-
 
         # for row in range(0, rows):
         #     operation_name = self.timers_table.item(row, 0).text()
@@ -413,19 +383,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
                 rel_value_tbl = str(round(dtime_rel/self.summary_time, 2))
                 self.timers_table.setItem(row, 2, QTableWidgetItem(str(rel_value_tbl)))
 
-                # self.series_.remove(self.series_.slices()[0])
-                # _slice = QPieSlice(operation_name , dtime_rel, self.series)
-                # # _slice.setBrush(QColor(*[random.randint(0, 255) for _ in range(3)]) )
-                # _slice.setLabelVisible(True)
-                # self.series_.append(_slice)
-                # for slice in self.series.slices():
-                #     slice.setLabel("{:.2f}%".format(100 * slice.percentage()))
-                # self.series_.setLabelsPosition(QPieSlice.LabelInsideNormal)
-                # self.chart_.legend().setVisible(True)
-                # self.chart_.legend().setAlignment(Qt.AlignBottom)
-                # i = len(self.series_)
-                # self.chart_.legend().markers(self.series_)[i-1].setLabel(operation_name)
-
     def refresh_diagram(self):
 
         dict = self.operations
@@ -440,21 +397,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
             dtime_rel = (date_now - datetime_event).total_seconds()
 
             if self.summary_time!=0:
+                print('((((((((((((()))))))))))))')
                 rel_value = dtime_rel/self.summary_time * 100
                 rel_value_tbl = str(round(dtime_rel/self.summary_time,2))
                 self.series_.remove(self.series_.slices()[0])
-                _slice = QPieSlice(operation_name , dtime_rel, self.series)
+                _slice = QPieSlice(operation_name , dtime_rel, self.series_)
                 # _slice.setBrush(QColor(*[random.randint(0, 255) for _ in range(3)]) )
                 _slice.setLabelVisible(True)
                 self.series_.append(_slice)
-                for slice in self.series.slices():
-                    slice.setLabel("{:.2f}%".format(100 * slice.percentage()))
+                for pslice in self.series_.slices():
+                    pslice.setLabel("{:.2f}%".format(100 * pslice.percentage()))
                 self.series_.setLabelsPosition(QPieSlice.LabelInsideNormal)
                 self.chart_.legend().setVisible(True)
                 self.chart_.legend().setAlignment(Qt.AlignBottom)
                 i = len(self.series_)
                 self.chart_.legend().markers(self.series_)[i-1].setLabel(operation_name)
-        print('1234')
 
     def convert_sec_to_time(self, seconds) -> str:
 
@@ -523,7 +480,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
           child.widget().deleteLater()
 
-    def fileSave(self):
+    def file_Save_main(self, model):
+
+        now  = datetime.now()
+        now_str = now.strftime("%Y-%m-%d-%H.%M.%S")
 
         fileName, ok = QFileDialog.getSaveFileName(
             self,
@@ -536,7 +496,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
         _list = []
         model_1 = self.timers_table.model()
-        model_2 = self.errors_table.model()
 
         for row in range(model_1.rowCount()):
             _r = []
@@ -544,24 +503,67 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
                 _r.append("{}".format(model_1.index(row, column).data() or ""))
             _list.append(_r)
 
-        for row in range(model_2.rowCount()):
-            _r = []
-            for column in range(model_2.columnCount()):
-                _r.append("{}".format(model_2.index(row, column).data() or ""))
-            _list.append(_r)
 
         workbook = Workbook(fileName)
         worksheet = workbook.add_worksheet()
 
+        worksheet.write(0, 0, 'Дата')
+        worksheet.write(0, 1, now_str)
+        worksheet.write(0, 2, 'Пользователь')
+        worksheet.write(0, 3, self.user)
+
+        worksheet.write(2, 0, 'Название')
+        worksheet.write(2, 1, 'Время')
+        worksheet.write(2, 2, 'Относительное время')
+
         for r, row in enumerate(_list):
             for c, col in enumerate(row):
-                worksheet.write(r, c, col)
+                worksheet.write(r + 3, c, col)
+
         workbook.close()
-        msg = QMessageBox.information(
+
+    def file_Save_stat(self, model):
+
+        now  = datetime.now()
+        now_str = now.strftime("%Y-%m-%d-%H.%M.%S")
+
+        fileName, ok = QFileDialog.getSaveFileName(
             self,
-            "Success!",
-            f"Данные сохранены в файле: \n{fileName}"
+            "Сохранить файл",
+            ".",
+            "All Files(*.xlsx)"
         )
+        if not fileName:
+            return
+
+        _list = []
+        model_1 = self.timers_table_2.model()
+
+        for row in range(model_1.rowCount()):
+            _r = []
+            for column in range(model_1.columnCount()):
+                _r.append("{}".format(model_1.index(row, column).data() or ""))
+            _list.append(_r)
+
+
+        workbook = Workbook(fileName)
+        worksheet = workbook.add_worksheet()
+
+        worksheet.write(0, 0, 'Дата')
+        worksheet.write(0, 1, now_str)
+        worksheet.write(0, 2, 'Пользователь')
+        worksheet.write(0, 3, self.user)
+
+        worksheet.write(2, 0, 'Название')
+        worksheet.write(2, 1, 'Время')
+        worksheet.write(2, 2, 'Относительное время')
+
+        for r, row in enumerate(_list):
+            for c, col in enumerate(row):
+                worksheet.write(r+2, c, col)
+
+        workbook.close()
+
 
     def diagram_save(self):
 
