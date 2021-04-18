@@ -138,14 +138,14 @@ class DataParser():
 
         connection = sqlite3.connect(DB_PATH)
         cursor = connection.cursor()
-        gen_data = data_generator()
-        list_to_pars = data
+        cursor.execute("SELECT user_name FROM users ")
 
+        list_to_pars = data
         event_date = list_to_pars[0]
-        user = list_to_pars[4]
-        machine = list_to_pars[1]
-        event = list_to_pars[2]
-        status = list_to_pars[3]
+        user = list_to_pars[3]
+        machine = 'ML_35'
+        event = list_to_pars[1]
+        status = list_to_pars[2]
 
         cursor.execute(f"""SELECT * FROM users WHERE user_name = ? """, (user,))
 
@@ -194,7 +194,7 @@ class DataParser():
 
         str_users = str_users + 'user_name = ?'
         str_users_search = 'SELECT user_id FROM users WHERE ' + str_users
-        cursor.execute(str_users_search, users)
+        cursor.execute(str_users_search, (users))
         users = cursor.fetchall()
 
         while j < len(equipment) - 1:
@@ -214,8 +214,8 @@ class DataParser():
         for machine in machines:
             filter_list.append(machine[0])
 
-        filter_list.append(datetime.strftime(start_dtime, '%Y-%m-%d %H:%M:%S'))
-        filter_list.append(datetime.strftime(finish_dtime, '%Y-%m-%d %H:%M:%S'))
+        filter_list.append(datetime.strftime(start_dtime, '%Y-%m-%d %H:%M:%S.%f'))
+        filter_list.append(datetime.strftime(finish_dtime, '%Y-%m-%d %H:%M:%S.%f'))
         start_str = 'SELECT * FROM operations WHERE '
         str_users = ''
         str_machines = ''
@@ -234,9 +234,8 @@ class DataParser():
 
         str_machines = str_machines + 'machine_id=?'
 
-        execute_line = start_str + '(' + str_users + ')'+ ' AND ' + '(' + str_machines + ')'+ ' AND ' + 'event_date>=?'+ ' AND ' + 'event_date<=?'
-        cursor.execute(execute_line, filter_list)
-
+        execute_line = start_str + '(' + str_users + ')'+ ' AND ' + 'event_date>=?'+ ' AND ' + 'event_date<=?'
+        cursor.execute(execute_line, (filter_list))
         row_filters_data = cursor.fetchall()
 
         result_data = defaultdict(list)
@@ -244,31 +243,39 @@ class DataParser():
         start_status = cursor.execute('SELECT status_id FROM status_table WHERE status_name = ?',('START', )).fetchall()
         finish_status = cursor.execute('SELECT status_id FROM status_table WHERE status_name = ?',('FINISH', )).fetchall()
 
-        #print(row_filters_data)
-
         for lst in row_filters_data:
 
             result_data[lst[3]].append([lst[0], lst[4]])
 
+
         sorted_data = defaultdict(list)
-        print(row_filters_data)
+        error_data = defaultdict(list)
 
         for operation in result_data.keys():
 
-            if int(result_data[operation][-1][-1]) == finish_status[0][0]:
-
+            start_operation_str = result_data[operation][0][0]
+            start_operation_date = datetime.strptime(start_operation_str, '%Y-%m-%d %H:%M:%S.%f')
+            if operation == 'ERROR':
+                error_id = result_data[operation][-1][-1]
+                error_name  = cursor.execute('SELECT status_name FROM status_table WHERE status_id= ?',(error_id, )).fetchall()
+                error_data[error_name[0][0]] = start_operation_str
+            elif operation != 'ERROR' and int(result_data[operation][-1][-1]) == finish_status[0][0]:
                 end_operation_str = result_data[operation][-1][-2]
-                end_operation_date = datetime.strptime(end_operation_str, '%Y-%m-%d %H:%M:%S')
-
-                start_operation_str = result_data[operation][0][0]
-                start_operation_date = datetime.strptime(start_operation_str, '%Y-%m-%d %H:%M:%S')
-
-                time_sec = (end_operation_date - start_operation_date ).total_seconds()
+                end_operation_date = datetime.strptime(end_operation_str, '%Y-%m-%d %H:%M:%S.%f')
+                time_sec = (end_operation_date - start_operation_date).total_seconds()
                 sorted_data[operation] = time_sec
+
+            elif operation != 'ERROR' and int(result_data[operation][-1][-1]) == start_status[0][0]:
+                end_operation_str = finish_dtime
+                end_operation_date = finish_dtime
+                time_sec = (end_operation_date - start_operation_date).total_seconds()
+                sorted_data[operation] = time_sec
+
 
         connection.commit()
         connection.close()
-        return sorted_data
+
+        return sorted_data, error_data
 
     def hours_from_user(self, user:str) -> int:
 
@@ -331,18 +338,6 @@ class DataParser():
         connection.commit()
         connection.close()
         total_hours = int(summ/3600)
-
-list_of_events = [
-    ["2020-12-01 09:00:00", 'User_2', 'Machine_1', 'PROGRAM', 'START'],
-    ["2020-12-01 10:05:00", 'User_1', 'Machine_1', 'TASK', 'START'],
-    ["2020-12-01 10:05:00", 'User_1', 'Machine_1', 'LASER', 'START'],
-    ["2020-12-01 10:05:30", 'User_2', 'Machine_1', 'GAS', 'START'],
-    ["2020-12-01 10:06:30", 'User_2', 'Machine_1', 'GAS', 'FINISH'],
-    ["2020-12-01 10:07:00", 'User_1', 'Machine_1',  'LASER', 'FINISH'],
-    ["2020-12-01 10:07:30", 'User_1', 'Machine_1', 'ERROR_1', 'FINISH'],
-    ["2020-12-01 10:09:00", 'User_1', 'Machine_1',  'TASK', 'FINISH'],
-    ["2020-12-01 10:30:00", 'User_1', 'Machine_1', 'PROGRAM', 'FINISH']
-        ]
 
 
 # test_users = ['User_1', 'User_2']

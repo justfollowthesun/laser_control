@@ -144,6 +144,7 @@ public:
         spinBox_Freq->setObjectName(QString::fromUtf8("spinBox_Freq"));
         sizePolicy2.setHeightForWidth(spinBox_Freq->sizePolicy().hasHeightForWidth());
         spinBox_Freq->setSizePolicy(sizePolicy2);
+        spinBox_Freq->setMaximum(9999999);
         spinBox_Freq->setValue(99);
 
         horizontalLayout_3->addWidget(spinBox_Freq);
