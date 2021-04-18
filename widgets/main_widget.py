@@ -78,6 +78,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.setupUi(self)
 
         self.user = ('default', 'default', 'default', '1') #create default user array
+        self.operations_list = []
         self.parser = DataParser() # connect to data parser
         #self.login_b.clicked.connect(self.open_login_widget)
         #self.stat_b.clicked.connect(self.set_up_table)
@@ -123,25 +124,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         #Parsing data and put data to database
         self.parser.parsing([dtime_event, event, status_event, user])
         print('########')
-        print('user is ')
-        print(self.user)
         if user not in self.users:
             self.users_box.addItems(self.user)
 
         rowPos = self.timers_table.rowCount() #count position to insert new row
         rowPos_err = self.timers_table.rowCount()
+        self.operations[event] = [status_event, dtime_event]
 
-        if event not in self.operations.keys() and event!= 'ERROR':
+        if event not in self.operations_list and event!= 'ERROR':
+
+            self.operations_list.append(event)
 
             self.timers_table.insertRow(rowPos) # insert new row to the counted position
             self.timers_table.setItem(rowPos, 0, QTableWidgetItem(event))
-            self.operations[event] = [status_event, dtime_event]
-
             datetime_event = datetime.strptime(dtime_event, '%Y-%m-%d %H:%M:%S.%f')
             dtime_rel = (date_now - datetime_event).total_seconds() #count seconds for calculate relative operation time
             dtime_abs = self.convert_sec_to_time(dtime_rel) #convert seconds to format hours:minutes:seconds (HH:MM:SS)
             self.timers_table.setItem(rowPos, 1, QTableWidgetItem(dtime_abs))
-            _slice = QPieSlice(event,dtime_rel, self.series)
+            _slice = QPieSlice(event, dtime_rel, self.series)
             # _slice.setBrush(QColor(*[random.randint(0, 255) for _ in range(3)]) )
             _slice.setLabelVisible(True)
             self.series_.append(_slice)
@@ -167,6 +167,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.parser_timer.setInterval(1000) # set time values to refresh timer (1000 equivalent to 1 sec)
         self.parser_timer.start()
         self.parser_timer.timeout.connect(self.refresh_table)
+
+
+    @pyqtSlot(list)
+    def refresh_diagram(self):
+        self.diagram_timer = QTimer(self) # create timer to dynamycally update operations table
+        self.diagram_timer.setInterval(10000) # set time values to refresh timer (1000 equivalent to 1 sec)
+        self.diagram_timer.start()
+        self.diagram_timer.timeout.connect(self.refresh_diagram)
 
     def set_up_filters(self) -> list:
 
@@ -340,25 +348,35 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
         self.create_diagram_2()
 
     def refresh_table(self):
+
         dict = self.operations
         rows = self.timers_table.rowCount()
         date_now = datetime.now()
-        summary_time = 1
+        summary_time = 0
+
         for row in range(0, rows):
+
            operation_name = self.timers_table.item(row, 0).text()
-           print(dict)
            status = dict[operation_name][0]
+           print(dict[operation_name])
            dtime = dict[operation_name][1]
-           status = status[:-2] #############################################
-           print(status, operation_name)
+
            if status == 'START':
 
                datetime_event = datetime.strptime(dtime, '%Y-%m-%d %H:%M:%S.%f')
                dtime_rel = (date_now - datetime_event).total_seconds()
                dtime_abs = self.convert_sec_to_time(dtime_rel)
                self.timers_table.setItem(row, 1, QTableWidgetItem(str(dtime_abs)))
-               summary_time = summary_time + dtime_rel
-               print(summary_time, dtime_rel)
+
+        for row in range(0, rows):
+
+            operation_name = self.timers_table.item(row, 0).text()
+            status = dict[operation_name][0]
+            dtime = dict[operation_name][1]
+            datetime_event = datetime.strptime(dtime, '%Y-%m-%d %H:%M:%S.%f')
+            dtime_rel = (date_now - datetime_event).total_seconds()
+            dtime_abs = self.convert_sec_to_time(dtime_rel)
+            summary_time = summary_time + dtime_rel
 
         for row in range(0, rows):
             operation_name = self.timers_table.item(row, 0).text()
@@ -366,7 +384,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
             dtime = dict[operation_name][1]
             datetime_event = datetime.strptime(dtime, '%Y-%m-%d %H:%M:%S.%f')
             dtime_rel = (date_now - datetime_event).total_seconds()
-            self.timers_table.setItem(row, 2, QTableWidgetItem(str(round(dtime_rel/summary_time*100, 2))))
+
+            if summary_time!=0:
+                rel_value = dtime_rel/summary_time * 100
+                rel_value_tbl = str(round(dtime_rel/summary_time,2))
+                self.timers_table.setItem(row, 2, QTableWidgetItem(str(rel_value_tbl)))
+
+                self.series_.remove(self.series_.slices()[0])
+                _slice = QPieSlice(operation_name , dtime_rel, self.series)
+                # _slice.setBrush(QColor(*[random.randint(0, 255) for _ in range(3)]) )
+                _slice.setLabelVisible(True)
+                self.series_.append(_slice)
+                for slice in self.series.slices():
+                    slice.setLabel("{:.2f}%".format(100 * slice.percentage()))
+                self.series_.setLabelsPosition(QPieSlice.LabelInsideNormal)
+                self.chart_.legend().setVisible(True)
+                self.chart_.legend().setAlignment(Qt.AlignBottom)
+                i = len(self.series_)
+                self.chart_.legend().markers(self.series_)[i-1].setLabel(event)
 
     def convert_sec_to_time(self, seconds) -> str:
 
@@ -477,10 +512,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow, MoveableWidget):
 
     def diagram_save(self):
 
-        pixmap = QPixmap(self.chartview_.sceneRect().toRect())
-        pixmap.fill("transparent")
+        pixmap = QPixmap(self.chartview_.sceneRect().size().toSize())
+        pixmap.fill()
+
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
+
         self.chartview_.render(painter)
         painter.end()
         fileName, ok = QFileDialog.getSaveFileName(
